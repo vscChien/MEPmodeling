@@ -2,6 +2,12 @@
 A Biological Model of Spinal and Peripheral Motor Pathways for TMS-induced MEPs
 
 ## Description
+```
+1. Load motor-evoked potential (MEP) waveforms under different TMS intensities.
+2. Generate simulated DI-waves based on the given TMS intensities.
+3. Optimize model parameters to fit the MEP waveforms
+```
+
 <p align="center">
   <a href="model_description.pdf">
     <img src="model_description.png" alt="Click to view PDF" width="400">
