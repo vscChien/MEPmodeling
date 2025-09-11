@@ -16,7 +16,7 @@ A Biological Model of Spinal and Peripheral Motor Pathways for TMS-induced MEPs
 
 
 ## Matlab demo script
-### Biological model
+### 1️⃣ Biological model
 ```matlab
 subj       = 1;  % subject 1~10
 withRC     = 1;  % 0: biological model without RC 
@@ -33,7 +33,7 @@ ga_MEPmodel_bio(subj,withRC,AMPAweight,reRun);
   </a>
 </p>
 
-### Biological model (no Renshaw cells)
+### 2️⃣ Biological model (no Renshaw cells)
 ```matlab
 subj       = 1;  % subject 1~10
 withRC     = 0;  % 0: biological model without RC 
@@ -50,7 +50,7 @@ ga_MEPmodel_bio(subj,withRC,AMPAweight,reRun);
   </a>
 </p>
 
-### Phenomenological model
+### 3️⃣ Phenomenological model
 ```matlab
 subj       = 1; % subject 1~10
 reRun      = 0; % 0: Load fitted result and plot simulated MEP.  
