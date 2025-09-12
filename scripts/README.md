@@ -26,6 +26,6 @@ fig_result_summary()
 ```
 <p align="center">
   <a href="figures/fig_result_summary.pdf">
-    <img src="figures/fig_result_summary.png" alt="Click to view PDF" width="400">
+    <img src="figures/fig_result_summary.png" alt="Click to view PDF" width="600">
   </a>
 </p>
