@@ -11,7 +11,7 @@
 fig_result_summary()
 ```
 <p align="center">
-  <a href="scripts/figures/fig_result_summary.pdf">
-    <img src="scripts/figures/fig_result_summary.png" alt="Click to view PDF" width="400">
+  <a href="figures/fig_result_summary.pdf">
+    <img src="figures/fig_result_summary.png" alt="Click to view PDF" width="400">
   </a>
 </p>
