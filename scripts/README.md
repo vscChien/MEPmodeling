@@ -5,12 +5,14 @@
     <img src="figures/fig_result_full.png" alt="Click to view PDF" width="800">
   </a>
 </p>
+
 ## 2️⃣ Biological model (no Renshaw cells)
 <p align="center">
   <a href="figures/fig_result_noRC.pdf">
     <img src="figures/fig_result_noRC.png" alt="Click to view PDF" width="800">
   </a>
 </p>
+
 ## 3️⃣ Phenomenological model
 <p align="center">
   <a href="figures/fig_result_pheno.pdf">
@@ -18,7 +20,7 @@
   </a>
 </p>
 
-## Comparison
+## 📗Comparison
 ```matlab
 fig_result_summary()
 ```
