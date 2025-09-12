@@ -14,7 +14,7 @@ Responses compared to Conventional Monophasic Stimuli.
 DOI: https://doi.org/10.1016/j.brs.2022.06.013
 Dataset:  https://osf.io/5ry92/
 ```
-**🥗For all fitting results, please see [Here](scripts/).**
+**🥗For model performance, please see [Here](scripts/).**
 
 <p align="center">
   <a href="model_description.pdf">
