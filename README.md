@@ -7,7 +7,7 @@ A Biological Model of Spinal and Peripheral Motor Pathways for TMS-induced MEPs
 2. Generate simulated DI-waves based on the given TMS intensities.
 3. Optimize model parameters to fit the MEP waveforms
 
-<MEP dataset>
+<MEP dataset, 10 healthy subjects>
 Sorkhabi, M. M., Wendt, K., O'Shea, J., & Denison, T. (2022, April 9).
 EMG data for Pulse width modulation-based TMS: Primary Motor Cortex
 Responses compared to Conventional Monophasic Stimuli.
