@@ -1,9 +1,17 @@
 # Model performance (goodness-of-fit to the MEPs of 10 subjects)
-## Biological model 
+## 1️⃣ Biological model
 
-## Biological model without RC
+## 2️⃣ Biological model (no Renshaw cells)
 
-## Phenomenological model 
+## 3️⃣ Phenomenological model
 
 
 ## Comparison
+```matlab
+fig_result_summary()
+```
+<p align="center">
+  <a href="scripts/figures/fig_result_summary.pdf">
+    <img src="scripts/figures/fig_result_summary.png" alt="Click to view PDF" width="400">
+  </a>
+</p>
