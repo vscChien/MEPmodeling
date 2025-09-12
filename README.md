@@ -11,7 +11,7 @@ Responses compared to Conventional Monophasic Stimuli.
 DOI: https://doi.org/10.1016/j.brs.2022.06.013
 Dataset:  https://osf.io/5ry92/
 ```
-**🥗For model performance, please see [Here](scripts/).**
+**🥗For model performance, please see [here](scripts/).**
 
 <p align="center">
   <a href="model_description.pdf">
@@ -25,7 +25,7 @@ Dataset:  https://osf.io/5ry92/
 ├── GA/                   # Genetic algorithm toolbox
 ├── data_Oxford_MEP/      # Data (MEP dataset)
 ├── data_MUAP/            # Data (Motor unit action potentials)
-├── MyelinatedAxonModel/  # Data (Extracelluar potential)
+├── MyelinatedAxonModel/  # Data (Extracellular potential)
 ├── fitted_results/      
 │   ├── bio/              # Biological model (with Renshaw cells)
 │   ├── bioNoRC/          # Biological model (without Renshaw cells)
@@ -35,16 +35,16 @@ Dataset:  https://osf.io/5ry92/
 
 ```
 
-## Matlab demo script
+## Matlab Demo Script
 ### 1️⃣ Biological model
 ```matlab
-subj       = 1;  % subject 1~10
+subj       = 1;  % subject 1–10
 withRC     = 1;  % 0: biological model without RC 
                  % 1: biological model with RC
 AMPAweight = []; % []:free parameter range [0,1]
                  %    or a fixed value within [0,1]               
 reRun      = 0;  % 0: Load fitted result and plot simulated MEP.  
-                 % 1: Rerun model fitting. Backup previous fitted result
+                 % 1: Rerun model fitting. Back up previous fitted result
 ga_MEPmodel_bio(subj,withRC,AMPAweight,reRun);
 ```
 <p align="center">
@@ -55,13 +55,13 @@ ga_MEPmodel_bio(subj,withRC,AMPAweight,reRun);
 
 ### 2️⃣ Biological model (no Renshaw cells)
 ```matlab
-subj       = 1;  % subject 1~10
+subj       = 1;  % subject 1–10
 withRC     = 0;  % 0: biological model without RC 
                  % 1: biological model with RC
 AMPAweight = []; % []:free parameter range [0,1]
                  %    or a fixed value within [0,1]               
 reRun      = 0;  % 0: Load fitted result and plot simulated MEP.  
-                 % 1: Rerun model fitting. Backup previous fitted result
+                 % 1: Rerun model fitting. Back up previous fitted result
 ga_MEPmodel_bio(subj,withRC,AMPAweight,reRun);
 ```
 <p align="center">
@@ -72,9 +72,9 @@ ga_MEPmodel_bio(subj,withRC,AMPAweight,reRun);
 
 ### 3️⃣ Phenomenological model
 ```matlab
-subj       = 1; % subject 1~10
+subj       = 1; % subject 1–10
 reRun      = 0; % 0: Load fitted result and plot simulated MEP.  
-                % 1: Rerun model fitting. Backup previous fitted result
+                % 1: Rerun model fitting. Back up previous fitted result
 ga_MEPmodel_pheno(subj,reRun);
 ```
 <p align="center">
