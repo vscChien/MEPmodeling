@@ -19,6 +19,20 @@ Dataset:  https://osf.io/5ry92/
   </a>
 </p>
 
+```bash
+├── README.md             # This file
+├── GA/                   # Genetic algorithm toolbox
+├── data_Oxford_MEP/      # Data (MEP dataset)
+├── data_MUAP/            # Data (Motor unit action potentials)
+├── MyelinatedAxonModel/  # Data (Extracelluar potential)
+├── fitted_results/      
+│   ├── bio/              # Biological model (with Renshaw cells)
+│   ├── bioNoRC/          # Biological model (without Renshaw cells)
+│   └── pheno/            # Phenomenological model
+└── scripts/              # Matlab scripts
+    └── figures/          
+
+```
 
 ## Matlab demo script
 ### 1️⃣ Biological model
