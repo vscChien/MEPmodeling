@@ -2,12 +2,12 @@
 
 1. Load motor-evoked potential (MEP) waveforms under different TMS intensities.<br>
 2. Generate model input (simulated DI-waves) based on given TMS intensities.<br>
-3. Optimize model parameters to fit MEP waveforms.
+3. Optimize model parameters to fit the MEP waveforms [1].<br>
 
-<MEP dataset>
-Sorkhabi, M. M., Wendt, K., O'Shea, J., & Denison, T. (2022, April 9). EMG data for Pulse width modulation-based TMS: Primary Motor Cortex Responses compared to Conventional Monophasic Stimuli. <br>
+
+[1] Sorkhabi, M. M., Wendt, K., O'Shea, J., & Denison, T. (2022, April 9). EMG data for Pulse width modulation-based TMS: Primary Motor Cortex Responses compared to Conventional Monophasic Stimuli. <br>
 DOI: https://doi.org/10.1016/j.brs.2022.06.013 <br>
-Dataset:  https://osf.io/5ry92/ <br>
+MEP Dataset:  https://osf.io/5ry92/ <br>
 
 **🥗For model performance, please see [here](scripts/).**
 
