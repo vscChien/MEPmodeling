@@ -19,8 +19,8 @@ def plot_summary(p, ref):
     t0 = ref['t0']
     intensities = ref['intensities']
 
-    fig = plt.figure(figsize=(15/2.54, 4.5/2.54)) # Convert cm to inches
-    gs = GridSpec(1, 4, figure=fig, wspace=0.3, left=0.05, right=0.95, top=0.85, bottom=0.2)
+    fig = plt.figure(figsize=(20/2.54, 6/2.54)) # Convert cm to inches
+    gs = GridSpec(1, 4, figure=fig, wspace=0.55, left=0.05, right=0.95, top=0.85, bottom=0.2)
 
     # --- Nexttile(1): MEP comparison ---
     ax1 = fig.add_subplot(gs[0, 0])
@@ -63,10 +63,11 @@ def plot_summary(p, ref):
     IO, simIO, myfit1, myfit2 = get_iocurve(simMEP, ref)
     
     x1 = np.linspace(IO[0, 0], IO[-1, 0], 100)
-    ax2.plot(x1, myfit1(x1), 'k', linewidth=1)
+    ax2.plot(x1, sigmoid(x1, *myfit1), 'k', linewidth=1)
+    print(myfit1)
     
     x2 = np.linspace(simIO[0, 0], simIO[-1, 0], 100)
-    ax2.plot(x2, myfit2(x2), 'r', linewidth=1)
+    ax2.plot(x2, sigmoid(x2, *myfit2), 'r', linewidth=1)
     
     ax2.scatter(IO[:, 0], IO[:, 1], 15, edgecolors='k', facecolors='none')
     ax2.errorbar(IO[:, 0], IO[:, 1], yerr=IO[:, 2], fmt='none', ecolor='k')
@@ -112,6 +113,7 @@ def plot_summary(p, ref):
 
     ax3.set_xlabel('Motor neuron', fontsize=10)
     ax3.set_xticks([1, 50, 100])
+    ax3.set_xlim([1, 100])
 
     # --- Nexttile(4): MU Trigger Time ---
     ax4 = fig.add_subplot(gs[0, 3])
@@ -119,12 +121,14 @@ def plot_summary(p, ref):
     maxES = ref['model']['maxES']
     
     # Using 'case 2' logic from MATLAB
-    tmp = np.transpose(spike_times + axonal_delay, (0, 2, 1)) # [100 x intensities x maxES]
-    tmp_flat = tmp.reshape(100 * len(intensities), maxES)
-    
+    shape_spike_time = np.shape(spike_times)
+    tmp = np.reshape(spike_times + axonal_delay, (shape_spike_time[0], shape_spike_time[2], shape_spike_time[1])) # [100 x intensities x maxES]
+    tmp_flat = np.reshape(tmp, (100 * len(intensities), maxES))
+
     y_coords = np.arange(1, (100 * len(intensities)) + 1)
     for col in range(maxES):
         ax4.scatter(tmp_flat[:, col], y_coords, 5, c='k', marker='.')
+        print(np.shape(tmp_flat[:, col]))
         
     ax4.set_ylim([0, 100 * len(intensities)])
     ax4.set_xlim([15, 50])
@@ -146,78 +150,126 @@ def plot_summary(p, ref):
     plt.show()
 
 def get_iocurve(simMEP, ref):
+    # # reload single-trial MEP for std of IO curve
+    # # Assume load_MEP is defined elsewhere and returns the expected tuple
+    # _, _, _, _, _, y0all = load_MEP(ref['subj'], ref['intensity_idx'], [20, 50], 0)
+    
+    # # -------------------------------------------
+    # num_intensities = len(ref['intensity_idx'])
+    # IO = np.zeros((num_intensities, 3))  # [Int, amplitude, std]
+    # simIO = np.zeros((num_intensities, 2))
+    
+    # for i in range(num_intensities):
+    #     # Time indices for peak (24 to 28 ms)
+    #     tidx1 = np.where((ref['t0'] >= 24) & (ref['t0'] <= 28))[0]
+        
+    #     # Calculate Experimental IO
+    #     peakv1 = np.max(ref['y0'][tidx1, i])
+    #     peaki1 = np.argmax(ref['y0'][tidx1, i])
+        
+    #     # Time indices for trough (peak time to peak time + 6ms)
+    #     peak_time = ref['t0'][tidx1[peaki1]]
+    #     tidx2 = np.where((ref['t0'] >= peak_time) & (ref['t0'] <= peak_time + 6))[0]
+        
+    #     peakv2 = np.min(ref['y0'][tidx2, i])
+        
+    #     IO[i, 0] = ref['intensities'][i]
+    #     IO[i, 1] = peakv1 - peakv2
+        
+    #     # Calculate standard error across trials (y0all: [intensity, time, trial])
+    #     num_trials = y0all.shape[2]
+    #     tmp = np.zeros(num_trials)
+    #     for j in range(num_trials):
+    #         trial_peakv1 = np.max(y0all[i, tidx1, j])
+    #         trial_peakv2 = np.min(y0all[i, tidx2, j])
+    #         tmp[j] = trial_peakv1 - trial_peakv2
+        
+    #     IO[i, 2] = np.std(tmp, ddof=1) / np.sqrt(len(tmp)) # Standard error
+        
+    #     # Calculate Simulated IO
+    #     tidx_sim = np.where((ref['t0'] >= 24) & (ref['t0'] <= 28))[0]
+    #     sim_peakv1 = np.max(simMEP[tidx_sim, i])
+    #     sim_peaki1 = np.argmax(simMEP[tidx_sim, i])
+        
+    #     sim_peak_time = ref['t0'][tidx_sim[sim_peaki1]]
+    #     tidx_sim2 = np.where((ref['t0'] >= sim_peak_time) & (ref['t0'] <= sim_peak_time + 6))[0]
+        
+    #     sim_peakv2 = np.min(simMEP[tidx_sim2, i])
+        
+    #     simIO[i, 0] = ref['intensities'][i]
+    #     simIO[i, 1] = sim_peakv1 - sim_peakv2
+
+    # # Fitting logic based on subject ID
+    # subj = ref['subj']
+    # if subj in [1, 2, 3, 4, 9, 10]:
+    #     start_point = [1.4, 10, 40]
+    # elif subj in [5, 7, 8]:
+    #     start_point = [1.4, 5, 50]
+    # elif subj == 6:
+    #     start_point = [1.4, 2, 60]
+    # else:
+    #     start_point = [1.4, 5, 50] # Default fallback
+
+    # # Perform curve fitting (myfit1 for experimental, myfit2 for simulated)
+    # # popt contains the optimized [a, r, x0]
+    # try:
+    #     popt1, _ = curve_fit(sigmoid, IO[:, 0], IO[:, 1], p0=start_point)
+    #     myfit1 = lambda x: sigmoid(x, *popt1)
+    # except:
+    #     myfit1 = None # Handle fitting failure
+        
+    # try:
+    #     popt2, _ = curve_fit(sigmoid, simIO[:, 0], simIO[:, 1], p0=start_point)
+    #     myfit2 = lambda x: sigmoid(x, *popt2)
+    # except:
+    #     myfit2 = None
+
+    # return IO, simIO, myfit1, myfit2
+
+
     # reload single-trial MEP for std of IO curve
-    # Assume load_MEP is defined elsewhere and returns the expected tuple
-    _, _, _, _, _, y0all = load_MEP(ref['subj'], ref['intensity_idx'], [20, 50], 0)
-    
-    # -------------------------------------------
-    num_intensities = len(ref['intensity_idx'])
-    IO = np.zeros((num_intensities, 3))  # [Int, amplitude, std]
-    simIO = np.zeros((num_intensities, 2))
-    
-    for i in range(num_intensities):
-        # Time indices for peak (24 to 28 ms)
-        tidx1 = np.where((ref['t0'] >= 24) & (ref['t0'] <= 28))[0]
-        
-        # Calculate Experimental IO
-        peakv1 = np.max(ref['y0'][tidx1, i])
-        peaki1 = np.argmax(ref['y0'][tidx1, i])
-        
-        # Time indices for trough (peak time to peak time + 6ms)
-        peak_time = ref['t0'][tidx1[peaki1]]
-        tidx2 = np.where((ref['t0'] >= peak_time) & (ref['t0'] <= peak_time + 6))[0]
-        
-        peakv2 = np.min(ref['y0'][tidx2, i])
-        
-        IO[i, 0] = ref['intensities'][i]
+    _, _, _, _, _, y0all = load_MEP(ref["subj"], ref["intensity_idx"], [20, 50], 0)
+
+    IO = np.zeros((len(ref["intensity_idx"]), 3))  # [Int, amplitude, std]
+    simIO = np.zeros((len(ref["intensity_idx"]), 2))
+
+    for i in range(len(ref["intensity_idx"])):
+        tidx1 = np.where((ref["t0"] >= 24) & (ref["t0"] <= 28))[0]
+        peakv1 = np.max(ref["y0"][tidx1, i])
+        peaki1 = np.argmax(ref["y0"][tidx1, i])
+        tidx2 = np.where((ref["t0"] >= ref["t0"][tidx1[peaki1]]) & (ref["t0"] <= ref["t0"][tidx1[peaki1]] + 6))[0]
+        peakv2 = np.min(ref["y0"][tidx2, i])
+        IO[i, 0] = ref["intensities"][i]
         IO[i, 1] = peakv1 - peakv2
-        
-        # Calculate standard error across trials (y0all: [intensity, time, trial])
-        num_trials = y0all.shape[2]
-        tmp = np.zeros(num_trials)
-        for j in range(num_trials):
-            trial_peakv1 = np.max(y0all[i, tidx1, j])
-            trial_peakv2 = np.min(y0all[i, tidx2, j])
-            tmp[j] = trial_peakv1 - trial_peakv2
-        
-        IO[i, 2] = np.std(tmp, ddof=1) / np.sqrt(len(tmp)) # Standard error
-        
-        # Calculate Simulated IO
-        tidx_sim = np.where((ref['t0'] >= 24) & (ref['t0'] <= 28))[0]
-        sim_peakv1 = np.max(simMEP[tidx_sim, i])
-        sim_peaki1 = np.argmax(simMEP[tidx_sim, i])
-        
-        sim_peak_time = ref['t0'][tidx_sim[sim_peaki1]]
-        tidx_sim2 = np.where((ref['t0'] >= sim_peak_time) & (ref['t0'] <= sim_peak_time + 6))[0]
-        
-        sim_peakv2 = np.min(simMEP[tidx_sim2, i])
-        
-        simIO[i, 0] = ref['intensities'][i]
-        simIO[i, 1] = sim_peakv1 - sim_peakv2
 
-    # Fitting logic based on subject ID
-    subj = ref['subj']
-    if subj in [1, 2, 3, 4, 9, 10]:
-        start_point = [1.4, 10, 40]
-    elif subj in [5, 7, 8]:
-        start_point = [1.4, 5, 50]
-    elif subj == 6:
-        start_point = [1.4, 2, 60]
+        tmp = np.zeros(y0all.shape[2])  # 15 trials
+        for j in range(y0all.shape[2]):
+            peakv1 = np.max(y0all[i, tidx1, j])
+            peakv2 = np.min(y0all[i, tidx2, j])
+            tmp[j] = peakv1 - peakv2
+        IO[i, 2] = np.std(tmp, ddof=1) / np.sqrt(len(tmp))  # std error of MEP amplitude
+
+        tidx = np.where((ref["t0"] >= 24) & (ref["t0"] <= 28))[0]
+        peakv1 = np.max(simMEP[tidx, i])
+        peaki1 = np.argmax(simMEP[tidx, i])
+        tidx = np.where((ref["t0"] >= ref["t0"][tidx[peaki1]]) & (ref["t0"] <= ref["t0"][tidx[peaki1]] + 6))[0]
+        peakv2 = np.min(simMEP[tidx, i])
+        simIO[i, 0] = ref["intensities"][i]
+        simIO[i, 1] = peakv1 - peakv2
+
+    if ref["subj"] in {1, 2, 3, 4, 9, 10}:
+        p0 = [40, 1.4, 10]
+    elif ref["subj"] in {5, 7, 8}:
+        p0 = [50, 1.4, 5]
+    elif ref["subj"] == 6:
+        p0 = [60, 1.4, 2]
     else:
-        start_point = [1.4, 5, 50] # Default fallback
+        p0 = [40, 1.4, 10]  # default fallback
 
-    # Perform curve fitting (myfit1 for experimental, myfit2 for simulated)
-    # popt contains the optimized [a, r, x0]
-    try:
-        popt1, _ = curve_fit(sigmoid, IO[:, 0], IO[:, 1], p0=start_point)
-        myfit1 = lambda x: sigmoid(x, *popt1)
-    except:
-        myfit1 = None # Handle fitting failure
-        
-    try:
-        popt2, _ = curve_fit(sigmoid, simIO[:, 0], simIO[:, 1], p0=start_point)
-        myfit2 = lambda x: sigmoid(x, *popt2)
-    except:
-        myfit2 = None
+    popt1, pcov1 = curve_fit(sigmoid, IO[:, 0], IO[:, 1], p0=p0)
+    popt2, pcov2 = curve_fit(sigmoid, simIO[:, 0], simIO[:, 1], p0=p0)
 
-    return IO, simIO, myfit1, myfit2
+    myfit1 = sigmoid(IO[:, 0], *popt1)
+    myfit2 = sigmoid(simIO[:, 0], *popt2)
+
+    return IO, simIO, popt1, popt2
