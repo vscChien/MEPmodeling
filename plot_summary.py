@@ -102,16 +102,16 @@ def plot_summary(p, ref):
     ylimit3 = ax3.get_ylim()
     
     text_params = {'fontsize': 7, 'backgroundcolor': 'none'}
-    ax3.text(15, ylimit3[1] * 0.85, f'R: [{R[0]:.1f}, {R[99]:.1f}]', color='k', **text_params)
+    ax3.text(15, ylimit3[1] * 0.8, f'R: [{R[0]:.1f}, {R[99]:.1f}]', color='k', **text_params)
     
     if 'withRC' in ref['model']:
-        ax3.text(15, ylimit3[1] * 0.75, f'Wexc: [{Wexc[0]:.1f}, {Wexc[99]:.1f}]', color='b', **text_params)
-        ax3.text(15, ylimit3[1] * 0.65, f'Winh*R: [{RWinh[0]:.1f}, {RWinh[99]:.1f}]', color='m', **text_params)
-        ax3.text(30, ylimit3[1] * 0.55, f'RCth= {np.round(p[9], 1)}', color='k', **text_params)
+        ax3.text(15, ylimit3[1] * 0.7, f'Wexc: [{Wexc[0]:.1f}, {Wexc[99]:.1f}]', color='b', **text_params)
+        ax3.text(15, ylimit3[1] * 0.6, f'Winh*R: [{RWinh[0]:.1f}, {RWinh[99]:.1f}]', color='m', **text_params)
+        ax3.text(30, ylimit3[1] * 0.5, f'RCth= {np.round(p[9], 1)}', color='k', **text_params)
 
-    ax3.text(30, ylimit3[1] * 0.45, f"dAxon= {np.round(ref['model']['axonalDelay'] , 1)}", color='k', **text_params)
-    ax3.text(30, ylimit3[1] * 0.35, f"Tmu= {np.round(ref['model']['Tmu'] , 1)}", color='k', **text_params)
-    ax3.text(15, ylimit3[1] * 0.95, f"AMPAw= {np.round(ref['model']['AMPAweight'] , 1)}", color='k', **text_params)
+    ax3.text(30, ylimit3[1] * 0.4, f"dAxon= {np.round(ref['model']['axonalDelay'] , 1)}", color='k', **text_params)
+    ax3.text(30, ylimit3[1] * 0.3, f"Tmu= {np.round(ref['model']['Tmu'] , 1)}", color='k', **text_params)
+    ax3.text(15, ylimit3[1] * 0.9, f"AMPAw= {np.round(ref['model']['AMPAweight'] , 1)}", color='k', **text_params)
 
     ax3.set_xlabel('Motor neuron', fontsize=10)
     ax3.set_xticks([1, 50, 100])
@@ -142,7 +142,7 @@ def plot_summary(p, ref):
         ax4.plot([17, 50], [i * 100, i * 100], 'k-', linewidth=0.5)
         
     for i in range(len(intensities)):
-        ax4.text(12, (i + 1) * 100 - 50, f'{intensities[i]}%', fontsize=6)
+        ax4.text(12, (i + 0.7) * 100 - 50, f'{intensities[i]}%', fontsize=6)
         
     ax4.spines['left'].set_visible(False)
     ax4.set_yticks([])
