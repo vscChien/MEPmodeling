@@ -43,29 +43,29 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.io import loadmat, savemat
-from MEPmodel_bio import MEPmodel_bio
-from config_model_bio import config_model_bio
 
-root = os.getcwd()
+# from scipy.io import loadmat, savemat
+# from MEPmodel_bio import MEPmodel_bio
+# from config_model_bio import config_model_bio
 
-# model setting
-# Treat 'ref' as a dictionary with tuple keys for nested fields
-ref = config_model_bio(1, 1, [])
+# root = os.getcwd()
 
-result_file = os.path.join(root, ref['resultname'])
-print(result_file)
+# # model setting
+# # Treat 'ref' as a dictionary with tuple keys for nested fields
+# ref = config_model_bio(1, 1, [])
 
-# run GA or load existing results
-if os.path.exists(result_file) and not 0:
-    print(f"Use fitted result: \n{ref['resultname']}")
-    tmp = loadmat(result_file)
-    # Flattening to ensure it's a 1D array as expected in Python
-    p_post = tmp['p_post'].flatten()
-# show result
-plotOn = 1
-MEPmodel_bio(p_post, ref, plotOn)
+# result_file = os.path.join(root, ref['resultname'])
+# print(result_file)
 
+# # run GA or load existing results
+# if os.path.exists(result_file) and not 0:
+#     print(f"Use fitted result: \n{ref['resultname']}")
+#     tmp = loadmat(result_file)
+#     # Flattening to ensure it's a 1D array as expected in Python
+#     p_post = tmp['p_post'].flatten()
+# # show result
+# plotOn = 1
+# MEPmodel_bio(p_post, ref, plotOn)
 #############################################################
 # from config_model_bio import config_model_bio
 # config_model_bio(1,1,0.5)
@@ -75,9 +75,9 @@ MEPmodel_bio(p_post, ref, plotOn)
 # dt = 0.1 # ms
 # gen_kernels(dt,tlength)
 #############################################################
-# from generate_EP import generate_EP
-# generate_EP(0.1, 1,2)
-# generate_EP(0.1, 1)
+from generate_EP import generate_EP
+generate_EP(0.1, 1,2)
+generate_EP(0.1, 1)
 #############################################################
 # from load_muap import load_muap
 # load_muap(1)
