@@ -1,8 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
-from scipy.interpolate import interp1d
+#from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
+from sigmoid import sigmoid
+from load_MEP import load_MEP
 
 def plot_summary(p, ref):
     # Extracting variables from the nested ref dictionary using tuple keys
@@ -38,22 +40,22 @@ def plot_summary(p, ref):
     ax1.spines['right'].set_visible(False)
     ax1.spines['top'].set_visible(False)
     ax1.set_yticks([])
-    ax1.set_xlabel('Time (ms)', fontsize=10, fontname='Calibri')
+    ax1.set_xlabel('Time (ms)', fontsize=10)
     ax1.set_xlim([15, 50])
     ax1.set_ylim([0, space * len(intensities) + np.max(y0)])
     
     for i in range(len(intensities)):
-        ax1.text(12, (i + 1) * space, f'{intensities[i]}%', fontsize=6, fontname='Calibri')
+        ax1.text(12, (i + 1) * space, f'{intensities[i]}%', fontsize=6)
     
     ylimit = ax1.get_ylim()
     peak = np.max(y0)
     if peak > 1:
         ax1.plot([47, 47], [ylimit[1] - 1, ylimit[1]], 'k', linewidth=1.5)
-        ax1.text(46, ylimit[1] - 0.5, '1 mV', fontsize=6, fontname='Calibri', ha='right')
+        ax1.text(46, ylimit[1] - 0.5, '1 mV', fontsize=6, ha='right')
     else:
         v_scale = np.round(peak / 2, 1)
         ax1.plot([47, 47], [ylimit[1] - v_scale, ylimit[1]], 'k', linewidth=1.5)
-        ax1.text(46, ylimit[1] - v_scale / 2, f'{v_scale} mV', fontsize=6, fontname='Calibri', ha='right')
+        ax1.text(46, ylimit[1] - v_scale / 2, f'{v_scale} mV', fontsize=6, ha='right')
 
     # --- Nexttile(2): IO Curve ---
     ax2 = fig.add_subplot(gs[0, 1])
@@ -73,8 +75,8 @@ def plot_summary(p, ref):
     ax2.set_xlim([27, 58])
     ax2.spines['top'].set_visible(False)
     ax2.spines['right'].set_visible(False)
-    ax2.set_xlabel('TMS intensity (%MSO)', fontsize=10, fontname='Calibri')
-    ax2.set_ylabel('Amplitude (mV)', fontsize=8, fontname='Calibri')
+    ax2.set_xlabel('TMS intensity (%MSO)', fontsize=10)
+    ax2.set_ylabel('Amplitude (mV)', fontsize=8)
     ax2.set_title('IO curve', fontsize=9)
     
     if ref['subj'] in [1, 2, 4, 7, 9]:
@@ -85,7 +87,7 @@ def plot_summary(p, ref):
     ax3 = fig.add_subplot(gs[0, 2])
     mn_indices = np.arange(1, 101)
     
-    if ref[('model', 'withRC')]:
+    if 'withRC' in ref['model']:
         ax3.scatter(mn_indices, Wexc, 10, c='b', marker='.', alpha=0.5)
         ax3.scatter(mn_indices, RWinh, 10, c='m', marker='.', alpha=0.5)
     
@@ -96,25 +98,25 @@ def plot_summary(p, ref):
     ax3.set_title('Model param.', fontsize=9)
     ylimit3 = ax3.get_ylim()
     
-    text_params = {'fontname': 'Calibri', 'fontsize': 7, 'backgroundcolor': 'none'}
+    text_params = {'fontsize': 7, 'backgroundcolor': 'none'}
     ax3.text(15, ylimit3[1] * 0.85, f'R: [{R[0]:.1f}, {R[99]:.1f}]', color='k', **text_params)
     
-    if ref[('model', 'withRC')]:
+    if 'withRC' in ref['model']:
         ax3.text(15, ylimit3[1] * 0.75, f'Wexc: [{Wexc[0]:.1f}, {Wexc[99]:.1f}]', color='b', **text_params)
         ax3.text(15, ylimit3[1] * 0.65, f'Winh*R: [{RWinh[0]:.1f}, {RWinh[99]:.1f}]', color='m', **text_params)
         ax3.text(30, ylimit3[1] * 0.55, f'RCth= {np.round(p[9], 1)}', color='k', **text_params)
 
-    ax3.text(30, ylimit3[1] * 0.45, f"dAxon= {np.round(ref[('model', 'axonalDelay')], 1)}", color='k', **text_params)
-    ax3.text(30, ylimit3[1] * 0.35, f"Tmu= {np.round(ref[('model', 'Tmu')], 1)}", color='k', **text_params)
-    ax3.text(15, ylimit3[1] * 0.95, f"AMPAw= {np.round(ref[('model', 'AMPAweight')], 1)}", color='k', **text_params)
+    ax3.text(30, ylimit3[1] * 0.45, f"dAxon= {np.round(ref['model']['axonalDelay'] , 1)}", color='k', **text_params)
+    ax3.text(30, ylimit3[1] * 0.35, f"Tmu= {np.round(ref['model']['Tmu'] , 1)}", color='k', **text_params)
+    ax3.text(15, ylimit3[1] * 0.95, f"AMPAw= {np.round(ref['model']['AMPAweight'] , 1)}", color='k', **text_params)
 
-    ax3.set_xlabel('Motor neuron', fontsize=10, fontname='Calibri')
+    ax3.set_xlabel('Motor neuron', fontsize=10)
     ax3.set_xticks([1, 50, 100])
 
     # --- Nexttile(4): MU Trigger Time ---
     ax4 = fig.add_subplot(gs[0, 3])
-    axonal_delay = ref[('model', 'axonalDelay')]
-    maxES = ref[('model', 'maxES')]
+    axonal_delay = ref['model']['axonalDelay'] 
+    maxES = ref['model']['maxES']
     
     # Using 'case 2' logic from MATLAB
     tmp = np.transpose(spike_times + axonal_delay, (0, 2, 1)) # [100 x intensities x maxES]
@@ -132,18 +134,90 @@ def plot_summary(p, ref):
         ax4.plot([17, 50], [i * 100, i * 100], 'k-', linewidth=0.5)
         
     for i in range(len(intensities)):
-        ax4.text(12, (i + 1) * 100 - 50, f'{intensities[i]}%', fontsize=6, fontname='Calibri')
+        ax4.text(12, (i + 1) * 100 - 50, f'{intensities[i]}%', fontsize=6)
         
     ax4.spines['left'].set_visible(False)
     ax4.set_yticks([])
     ax4.plot([47, 47], [1, 100], 'k', linewidth=1.5)
-    ax4.text(45, 50, '100 MUs', fontsize=8, fontname='Calibri', ha='right')
-    ax4.set_xlabel('Time (ms)', fontsize=10, fontname='Calibri')
+    ax4.text(45, 50, '100 MUs', fontsize=8, ha='right')
+    ax4.set_xlabel('Time (ms)', fontsize=10)
     ax4.set_title('MU trigger time', fontsize=9)
 
     plt.show()
 
-# Placeholder for custom function assumed to be defined elsewhere
 def get_iocurve(simMEP, ref):
-    # This should implement the logic found in the second half of the MATLAB file
-    pass
+    # reload single-trial MEP for std of IO curve
+    # Assume load_MEP is defined elsewhere and returns the expected tuple
+    _, _, _, _, _, y0all = load_MEP(ref['subj'], ref['intensity_idx'], [20, 50], 0)
+    
+    # -------------------------------------------
+    num_intensities = len(ref['intensity_idx'])
+    IO = np.zeros((num_intensities, 3))  # [Int, amplitude, std]
+    simIO = np.zeros((num_intensities, 2))
+    
+    for i in range(num_intensities):
+        # Time indices for peak (24 to 28 ms)
+        tidx1 = np.where((ref['t0'] >= 24) & (ref['t0'] <= 28))[0]
+        
+        # Calculate Experimental IO
+        peakv1 = np.max(ref['y0'][tidx1, i])
+        peaki1 = np.argmax(ref['y0'][tidx1, i])
+        
+        # Time indices for trough (peak time to peak time + 6ms)
+        peak_time = ref['t0'][tidx1[peaki1]]
+        tidx2 = np.where((ref['t0'] >= peak_time) & (ref['t0'] <= peak_time + 6))[0]
+        
+        peakv2 = np.min(ref['y0'][tidx2, i])
+        
+        IO[i, 0] = ref['intensities'][i]
+        IO[i, 1] = peakv1 - peakv2
+        
+        # Calculate standard error across trials (y0all: [intensity, time, trial])
+        num_trials = y0all.shape[2]
+        tmp = np.zeros(num_trials)
+        for j in range(num_trials):
+            trial_peakv1 = np.max(y0all[i, tidx1, j])
+            trial_peakv2 = np.min(y0all[i, tidx2, j])
+            tmp[j] = trial_peakv1 - trial_peakv2
+        
+        IO[i, 2] = np.std(tmp, ddof=1) / np.sqrt(len(tmp)) # Standard error
+        
+        # Calculate Simulated IO
+        tidx_sim = np.where((ref['t0'] >= 24) & (ref['t0'] <= 28))[0]
+        sim_peakv1 = np.max(simMEP[tidx_sim, i])
+        sim_peaki1 = np.argmax(simMEP[tidx_sim, i])
+        
+        sim_peak_time = ref['t0'][tidx_sim[sim_peaki1]]
+        tidx_sim2 = np.where((ref['t0'] >= sim_peak_time) & (ref['t0'] <= sim_peak_time + 6))[0]
+        
+        sim_peakv2 = np.min(simMEP[tidx_sim2, i])
+        
+        simIO[i, 0] = ref['intensities'][i]
+        simIO[i, 1] = sim_peakv1 - sim_peakv2
+
+    # Fitting logic based on subject ID
+    subj = ref['subj']
+    if subj in [1, 2, 3, 4, 9, 10]:
+        start_point = [1.4, 10, 40]
+    elif subj in [5, 7, 8]:
+        start_point = [1.4, 5, 50]
+    elif subj == 6:
+        start_point = [1.4, 2, 60]
+    else:
+        start_point = [1.4, 5, 50] # Default fallback
+
+    # Perform curve fitting (myfit1 for experimental, myfit2 for simulated)
+    # popt contains the optimized [a, r, x0]
+    try:
+        popt1, _ = curve_fit(sigmoid, IO[:, 0], IO[:, 1], p0=start_point)
+        myfit1 = lambda x: sigmoid(x, *popt1)
+    except:
+        myfit1 = None # Handle fitting failure
+        
+    try:
+        popt2, _ = curve_fit(sigmoid, simIO[:, 0], simIO[:, 1], p0=start_point)
+        myfit2 = lambda x: sigmoid(x, *popt2)
+    except:
+        myfit2 = None
+
+    return IO, simIO, myfit1, myfit2
