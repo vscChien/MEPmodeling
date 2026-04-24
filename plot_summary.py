@@ -79,7 +79,9 @@ def plot_summary(p, ref):
     ax2.set_xlabel('TMS intensity (%MSO)', fontsize=10)
     ax2.set_ylabel('Amplitude (mV)', fontsize=8)
     ax2.set_title('IO curve', fontsize=9)
-    
+    ax2.spines['top'].set_visible(False)
+    ax2.spines['right'].set_visible(False)
+
     if ref['subj'] in [1, 2, 4, 7, 9]:
         ticks = np.unique(np.append(ax2.get_yticks(), 0.5))
         ax2.set_yticks(ticks)
@@ -114,6 +116,8 @@ def plot_summary(p, ref):
     ax3.set_xlabel('Motor neuron', fontsize=10)
     ax3.set_xticks([1, 50, 100])
     ax3.set_xlim([1, 100])
+    ax3.spines['top'].set_visible(False)
+    ax3.spines['right'].set_visible(False)
 
     # --- Nexttile(4): MU Trigger Time ---
     ax4 = fig.add_subplot(gs[0, 3])
@@ -146,6 +150,8 @@ def plot_summary(p, ref):
     ax4.text(45, 50, '100 MUs', fontsize=8, ha='right')
     ax4.set_xlabel('Time (ms)', fontsize=10)
     ax4.set_title('MU trigger time', fontsize=9)
+    ax4.spines['top'].set_visible(False)
+    ax4.spines['right'].set_visible(False)
 
     plt.show()
 
