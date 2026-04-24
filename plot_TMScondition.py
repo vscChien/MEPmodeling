@@ -63,7 +63,7 @@ def plot_TMScondition(ref, idx):
     # spike_times2{idx} is a matrix where col 2 is time and col 1 is neuron index
     # Note: Adjusting index for Python if spike_times2 was a cell array
     spikes = spike_times2[idx]
-    ax.scatter(spikes[:, 1], spikes[:, 0], s=20, c='k', marker='.')
+    ax.scatter(spikes[:, 1], spikes[:, 0], s=5, c='k', marker='.')
     ax.set_xlim([0, 50])
     ax.set_ylim([0, 100])
     ax.set_yticks([1, 50, 100])
@@ -92,7 +92,7 @@ def plot_TMScondition(ref, idx):
         row_spikes = spike_times[n, :, idx] + delay
         # Filter out NaNs if they represent empty spike slots
         valid_spikes = row_spikes[~np.isnan(row_spikes)]
-        ax.scatter(valid_spikes, np.full_like(valid_spikes, n + 1), s=20, c='k', marker='.')
+        ax.scatter(valid_spikes, np.full_like(valid_spikes, n + 1), s=5, c='k', marker='.')
     
     ax.set_ylim([0, 100])
     ax.set_yticks([1, 50, 100])
