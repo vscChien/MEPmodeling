@@ -6,6 +6,8 @@ from scipy.optimize import curve_fit
 from sigmoid import sigmoid
 from load_MEP import load_MEP
 
+from scipy.io import loadmat
+
 def plot_summary(p, ref):
     # Extracting variables from the nested ref dictionary using tuple keys
     spike_times = ref['sim']['spike_times']
@@ -124,13 +126,12 @@ def plot_summary(p, ref):
     maxES = ref['model']['maxES']
     
     # Using 'case 2' logic from MATLAB
-    shape_spike_time = np.shape(spike_times)
-    tmp = np.reshape(spike_times + axonal_delay, (shape_spike_time[0], shape_spike_time[2], shape_spike_time[1])) # [100 x intensities x maxES]
-    tmp_flat = np.reshape(tmp, (100 * len(intensities), maxES))
+    tmp = np.transpose(spike_times + axonal_delay, (0, 2, 1)) # [100 x intensities x maxES]
+    tmp_flat = np.reshape(tmp, (100 * len(intensities), maxES), order='F')
 
     y_coords = np.arange(1, (100 * len(intensities)) + 1)
     for col in range(maxES):
-        ax4.scatter(tmp_flat[:, col], y_coords, 5, c='k', marker='.')
+        ax4.scatter(tmp_flat[:, col], y_coords, 0.2, c='k', marker='.')
         
     ax4.set_ylim([0, 100 * len(intensities)])
     ax4.set_xlim([15, 50])
@@ -145,7 +146,7 @@ def plot_summary(p, ref):
     ax4.spines['left'].set_visible(False)
     ax4.set_yticks([])
     ax4.plot([47, 47], [1, 100], 'k', linewidth=1.5)
-    ax4.text(45, 50, '100 MUs', fontsize=8, ha='right')
+    ax4.text(45, 10, '100 MUs', fontsize=8, ha='right')
     ax4.set_xlabel('Time (ms)', fontsize=10)
     ax4.set_title('MU trigger time', fontsize=9)
     ax4.spines['top'].set_visible(False)
