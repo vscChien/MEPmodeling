@@ -18,7 +18,7 @@ def MEPmodel_bio(p, ref, plotOn=0):
         plot_param_panel(p, ref)
         plot_summary(p, ref)
 
-        idx = len(ref["intensities"])  # same as MATLAB
+        idx = len(ref["intensities"]) -1 
         plot_TMScondition(ref, idx)
 
     return simMEP, ref
