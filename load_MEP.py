@@ -1,7 +1,9 @@
 import os
-import mat73
+import h5py
+import numpy as np
 import numpy as np
 import matplotlib.pyplot as plt
+from load_h5 import load_h5_to_dict
 
 
 def load_MEP(subj, iidx=None, tcrop=[20, 50], plotOn=1):
@@ -13,10 +15,13 @@ def load_MEP(subj, iidx=None, tcrop=[20, 50], plotOn=1):
         root,
         "data_Oxford_MEP",
         f"S{subj}_Magstim_data",
-        f"S{subj}.mat"
+        f"S{subj}.h5"
     )
 
-    tmp = mat73.loadmat(mat_path)
+    print(mat_path)
+    
+    with h5py.File(mat_path, 'r') as f:
+        tmp = load_h5_to_dict(f)
 
     mep = tmp["mep"]                 # shape: [N x time x trials]
     intensities = tmp["intensities"].flatten()
