@@ -41,6 +41,8 @@ def plot_TMScondition(ref, idx):
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.set_ylabel('Rate (Hz)', fontsize=10)
+    ax.set_xlim([0, 50])
+
 
     # Nexttile 2: Effective conductances
     ax = axes[1]
@@ -55,6 +57,7 @@ def plot_TMScondition(ref, idx):
             fontsize=8)
     ax.set_title('Effective conductances of MN1', fontsize=11)
     ax.legend(fontsize=8, loc='upper right')
+    ax.set_xlim([0, 50])
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
 
@@ -69,6 +72,8 @@ def plot_TMScondition(ref, idx):
     ax.set_yticks([1, 50, 100])
     ax.set_title('MN spikes', fontsize=11)
     ax.set_ylabel('MN', fontsize=10)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
 
     # Nexttile 4: RC activity
     ax = axes[3]
@@ -76,12 +81,18 @@ def plot_TMScondition(ref, idx):
     ax.set_ylabel('Rate (Hz)', fontsize=10)
     ax.set_ylim([-0.1, 1.1])
     ax.set_title('RC activity', fontsize=11)
+    ax.spines['top'].set_visible(False)
+
     
     ax_right = ax.twinx()
     h2 = ax_right.fill_between(t, Vr_all[idx, :], color=[234/255, 153/255, 153/255], alpha=0.5, label='EPSP')
-    ax_right.set_ylabel('EPSP(mV)', fontsize=10)
+    ax_right.set_ylabel('EPSP(mV)', fontsize=10, color=[234/255, 153/255, 153/255])
+    ax_right.spines['right'].set_color([234/255, 153/255, 153/255])
+    ax_right.tick_params(axis='y', color=[234/255, 153/255, 153/255])
+    [t.set_color([234/255, 153/255, 153/255]) for t in ax_right.yaxis.get_ticklabels()]
     ax_right.spines['top'].set_visible(False)
     ax.legend([h2, h1], ['EPSP', 'rate'], fontsize=8)
+    ax.set_xlim([0, 50])
 
     # Nexttile 5: MU trigger times
     ax = axes[4]
@@ -101,6 +112,8 @@ def plot_TMScondition(ref, idx):
     ax.set_title('MU trigger times', fontsize=11)
     ax.set_xlim([0, 50])
     ax.set_ylabel('MU', fontsize=10)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
 
     # Nexttile 6: MEP Comparison
     ax = axes[5]
@@ -118,5 +131,7 @@ def plot_TMScondition(ref, idx):
     ax.set_xlabel('Time (ms)', fontsize=10)
     ax.set_xlim([0, 50])
     ax.set_ylabel('Amplitude (mV)', fontsize=10)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
 
     plt.show()
