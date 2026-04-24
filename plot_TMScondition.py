@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from cal_R2 import cal_R2
+from cal_NRMSD import cal_NRMSD
 
 def plot_TMScondition(ref, idx):
     """
@@ -7,21 +9,21 @@ def plot_TMScondition(ref, idx):
     Maintains the same variable names and structure.
     
     Assumes:
-    - ref is a dictionary where nested fields are accessed via tuples: ref[('parent', 'child')]
+    - ref is a dictionary where nested fields are accessed via tuples: ref[['parent', 'child')]
     - cal_R2 and cal_NRMSD are defined elsewhere.
     """
     
     # Extract variables from ref dictionary
     # MATLAB: spike_times=ref.sim.spike_times;
-    spike_times = ref[('sim', 'spike_times')]
-    spike_times2 = ref[('sim', 'spike_times2')]
-    simMEP = ref[('sim', 'simMEP2')]
-    DIwave = ref[('model', 'DIwave')]
-    t = ref[('model', 't')]
-    gexc_all = ref[('sim', 'gexc_all')]
-    ginh_all = ref[('sim', 'ginh_all')]
-    Rr_all = ref[('sim', 'mRC_all')]
-    Vr_all = ref[('sim', 'vRC_all')]
+    spike_times = ref['sim']['spike_times']
+    spike_times2 = ref['sim']['spike_times2']
+    simMEP = ref['sim']['simMEP2']
+    DIwave = ref['model']['DIwave']
+    t = ref['model']['t']
+    gexc_all = ref['sim']['gexc_all']
+    ginh_all = ref['sim']['ginh_all']
+    Rr_all = ref['sim']['mRC_all']
+    Vr_all = ref['sim']['vRC_all']
 
     # Setup figure
     # width=10; height=15; centimeters to inches conversion (~2.54 cm/inch)
@@ -48,7 +50,7 @@ def plot_TMScondition(ref, idx):
     ax.fill_between(t, ginh_all[idx, :], color=[109/255, 158/255, 235/255], alpha=0.5, label='g$_{inh}$/g$_{leak}$')
     
     ylimit = ax.get_ylim()
-    ampa_w = ref[('model', 'AMPAweight')]
+    ampa_w = ref['model']['AMPAweight']
     ax.text(1.5, ylimit[1] * 0.7, f"AMPA:NMDA \n= {round(ampa_w, 2)} : {round(1-ampa_w, 2)}",
             fontsize=8, fontname='Calibri')
     ax.set_title('Effective conductances of MN1')
@@ -85,7 +87,7 @@ def plot_TMScondition(ref, idx):
     ax = axes[4]
     # scatter(spike_times(:,:,idx)+ref.model.axonalDelay, 1:100)
     # spike_times structure is [Neurons x Spikes x Intensity]
-    delay = ref[('model', 'axonalDelay')]
+    delay = ref['model']['axonalDelay']
     for n in range(100):
         row_spikes = spike_times[n, :, idx] + delay
         # Filter out NaNs if they represent empty spike slots
@@ -104,7 +106,7 @@ def plot_TMScondition(ref, idx):
     ax = axes[5]
     ax.plot(ref['t0'], ref['y0'][:, idx], 'k', linewidth=2, label=f"{ref['intensities'][idx]}%MSO")
     ax.plot(ref['t0'], simMEP[:, idx], 'r', linewidth=1.5, label='simMEP')
-    ax.legend(loc='northwest', fontsize=8)
+    ax.legend(loc='upper left', fontsize=8)
     
     # Assuming cal_R2 and cal_NRMSD are costume functions available in the environment
     R2 = cal_R2(ref['y0'][:, idx], simMEP[:, idx])
