@@ -1,8 +1,9 @@
 import os
+import h5py
 import numpy as np
-from scipy.io import loadmat
-from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
+from load_h5 import load_h5_to_dict
+from scipy.interpolate import interp1d
 
 def generate_EP(d=0.01, plotOn=0, Axontype=1):
     # ----------load AP (by Arancibia-Carcamo model)
@@ -10,15 +11,16 @@ def generate_EP(d=0.01, plotOn=0, Axontype=1):
     
     # Path logic equivalent to MATLAB's switch Axontype
     if Axontype == 1:
-        data_path = os.path.join(root, 'MyelinatedAxonModel', 'EP', 'AP.mat')
+        data_path = os.path.join(root, 'MyelinatedAxonModel', 'EP', 'AP.h5')
     elif Axontype == 2:
-        data_path = os.path.join(root, 'MyelinatedAxonModel', 'EP', 'AP2.mat')
+        data_path = os.path.join(root, 'MyelinatedAxonModel', 'EP', 'AP2.h5')
     else:
         # Default fallback if needed
-        data_path = os.path.join(root, 'MyelinatedAxonModel', 'EP', 'AP.mat')
+        data_path = os.path.join(root, 'MyelinatedAxonModel', 'EP', 'AP.h5')
 
-    # Load the .mat file
-    mat_contents = loadmat(data_path)
+    # Load the file
+    with h5py.File(data_path, 'r') as f:
+        mat_contents = load_h5_to_dict(f)
     TIME_VECTOR = mat_contents['TIME_VECTOR'].flatten()
     MEMBRANE_POTENTIAL = mat_contents['MEMBRANE_POTENTIAL']
 
