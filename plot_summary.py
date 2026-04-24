@@ -64,8 +64,7 @@ def plot_summary(p, ref):
     
     x1 = np.linspace(IO[0, 0], IO[-1, 0], 100)
     ax2.plot(x1, sigmoid(x1, *myfit1), 'k', linewidth=1)
-    print(myfit1)
-    
+  
     x2 = np.linspace(simIO[0, 0], simIO[-1, 0], 100)
     ax2.plot(x2, sigmoid(x2, *myfit2), 'r', linewidth=1)
     
@@ -132,7 +131,6 @@ def plot_summary(p, ref):
     y_coords = np.arange(1, (100 * len(intensities)) + 1)
     for col in range(maxES):
         ax4.scatter(tmp_flat[:, col], y_coords, 5, c='k', marker='.')
-        print(np.shape(tmp_flat[:, col]))
         
     ax4.set_ylim([0, 100 * len(intensities)])
     ax4.set_xlim([15, 50])
