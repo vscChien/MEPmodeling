@@ -36,11 +36,11 @@ def plot_TMScondition(ref, idx):
     ax.set_ylim([-0.1, 1.1])
     ylimit = ax.get_ylim()
     ax.text(10, ylimit[1] * 0.7, f"{ref['intensities'][idx]}% MSO", 
-            fontsize=8, fontname='Calibri')
+            fontsize=8)
     ax.set_title(f"DI-waves (subject {ref['subj']})")
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    ax.set_ylabel('Rate (Hz)', fontsize=10, fontname='Calibri')
+    ax.set_ylabel('Rate (Hz)', fontsize=10)
 
     # Nexttile 2: Effective conductances
     ax = axes[1]
@@ -52,7 +52,7 @@ def plot_TMScondition(ref, idx):
     ylimit = ax.get_ylim()
     ampa_w = ref['model']['AMPAweight']
     ax.text(1.5, ylimit[1] * 0.7, f"AMPA:NMDA \n= {round(ampa_w, 2)} : {round(1-ampa_w, 2)}",
-            fontsize=8, fontname='Calibri')
+            fontsize=8)
     ax.set_title('Effective conductances of MN1')
     ax.legend(fontsize=8)
     ax.spines['top'].set_visible(False)
@@ -68,18 +68,18 @@ def plot_TMScondition(ref, idx):
     ax.set_ylim([0, 100])
     ax.set_yticks([1, 50, 100])
     ax.set_title('MN spikes')
-    ax.set_ylabel('MN', fontsize=10, fontname='Calibri')
+    ax.set_ylabel('MN', fontsize=10)
 
     # Nexttile 4: RC activity
     ax = axes[3]
     h1, = ax.plot(t[:-1], Rr_all[idx, :-1], 'r', linewidth=1, label='rate')
-    ax.set_ylabel('Rate (Hz)', fontsize=10, fontname='Calibri')
+    ax.set_ylabel('Rate (Hz)', fontsize=10)
     ax.set_ylim([-0.1, 1.1])
     ax.set_title('RC activity')
     
     ax_right = ax.twinx()
     h2 = ax_right.fill_between(t, Vr_all[idx, :], color=[234/255, 153/255, 153/255], alpha=0.5, label='EPSP')
-    ax_right.set_ylabel('EPSP(mV)', fontsize=10, fontname='Calibri')
+    ax_right.set_ylabel('EPSP(mV)', fontsize=10)
     ax_right.spines['top'].set_visible(False)
     ax.legend([h2, h1], ['EPSP', 'rate'], fontsize=8)
 
@@ -97,10 +97,10 @@ def plot_TMScondition(ref, idx):
     ax.set_ylim([0, 100])
     ax.set_yticks([1, 50, 100])
     ylimit = ax.get_ylim()
-    ax.text(1.5, ylimit[1] * 0.7, f"Axonal delay \n= {delay:.2g} ms", fontsize=8, fontname='Calibri')
+    ax.text(1.5, ylimit[1] * 0.7, f"Axonal delay \n= {delay:.2g} ms", fontsize=8)
     ax.set_title('MU trigger times')
     ax.set_xlim([0, 50])
-    ax.set_ylabel('MU', fontsize=10, fontname='Calibri')
+    ax.set_ylabel('MU', fontsize=10)
 
     # Nexttile 6: MEP Comparison
     ax = axes[5]
@@ -115,8 +115,8 @@ def plot_TMScondition(ref, idx):
     ax.set_title(f"MEP (R^2 = {R2:.2g}, NRMSD = {NRMSD*100:.2g}%)")
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    ax.set_xlabel('Time (ms)', fontsize=10, fontname='Calibri')
+    ax.set_xlabel('Time (ms)', fontsize=10)
     ax.set_xlim([0, 50])
-    ax.set_ylabel('Amplitude (mV)', fontsize=10, fontname='Calibri')
+    ax.set_ylabel('Amplitude (mV)', fontsize=10)
 
     plt.show()
