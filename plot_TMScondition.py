@@ -54,7 +54,7 @@ def plot_TMScondition(ref, idx):
     ax.text(1.5, ylimit[1] * 0.7, f"AMPA:NMDA \n= {round(ampa_w, 2)} : {round(1-ampa_w, 2)}",
             fontsize=8)
     ax.set_title('Effective conductances of MN1', fontsize=11)
-    ax.legend(fontsize=8)
+    ax.legend(fontsize=8, loc='upper right')
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
 
