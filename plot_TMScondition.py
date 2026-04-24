@@ -51,7 +51,7 @@ def plot_TMScondition(ref, idx):
     
     ylimit = ax.get_ylim()
     ampa_w = ref['model']['AMPAweight']
-    ax.text(1.5, ylimit[1] * 0.7, f"AMPA:NMDA \n= {round(ampa_w, 2)} : {round(1-ampa_w, 2)}",
+    ax.text(1.5, ylimit[1] * 0.2, f"AMPA:NMDA \n= {round(ampa_w, 2)} : {round(1-ampa_w, 2)}",
             fontsize=8)
     ax.set_title('Effective conductances of MN1', fontsize=11)
     ax.legend(fontsize=8, loc='upper right')
@@ -97,7 +97,7 @@ def plot_TMScondition(ref, idx):
     ax.set_ylim([0, 100])
     ax.set_yticks([1, 50, 100])
     ylimit = ax.get_ylim()
-    ax.text(1.5, ylimit[1] * 0.7, f"Axonal delay \n= {delay:.2g} ms", fontsize=8)
+    ax.text(1.5, ylimit[1]*0.2, f"Axonal delay \n= {delay:.2g} ms", fontsize=8)
     ax.set_title('MU trigger times', fontsize=11)
     ax.set_xlim([0, 50])
     ax.set_ylabel('MU', fontsize=10)
