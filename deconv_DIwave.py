@@ -20,7 +20,7 @@ def deconv_DIwave(times, DIwave, ref):
 
     if not hasattr(ref, 'EP'):
         d = 0.1
-        EP, t, discard = generate_EP(d)  
+        EP, t, _ = generate_EP(d)  
         dt = t[1] - t[0]
         EP = -EP
     else:
