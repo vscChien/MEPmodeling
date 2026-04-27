@@ -31,5 +31,4 @@ def gen_DIwave(t, intensity):
         plt.xlim([t[0], t[-1]])
         plt.title(f"DI wave (at {intensity} RMT)")
         plt.show()
-
     return DIwave
