@@ -12,43 +12,47 @@ def generate_EP(d=0.01, plotOn=0, Axontype=1):
     # Path logic equivalent to MATLAB's switch Axontype
     if Axontype == 1:
         data_path = os.path.join(root, 'MyelinatedAxonModel', 'EP', 'AP.h5')
-    elif Axontype == 2:
-        data_path = os.path.join(root, 'MyelinatedAxonModel', 'EP', 'AP2.h5')
     else:
-        # Default fallback if needed
-        data_path = os.path.join(root, 'MyelinatedAxonModel', 'EP', 'AP.h5')
+        data_path = os.path.join(root, 'MyelinatedAxonModel', 'EP', 'AP2.h5')
 
     # Load the file
     with h5py.File(data_path, 'r') as f:
         mat_contents = load_h5_to_dict(f)
-    TIME_VECTOR = mat_contents['TIME_VECTOR'].flatten()
+    times = mat_contents['TIME_VECTOR']
+    times = times.reshape((len(times), 1))
     MEMBRANE_POTENTIAL = mat_contents['MEMBRANE_POTENTIAL']
 
     # ----------------------------------------------------
     idx = 20  # MATLAB idx=21 corresponds to index 20 in 0-based Python
-    times = TIME_VECTOR.copy()
     padding = 1000
     dt = times[1] - times[0]
     
     # Append padding to times
     padding_times = times[-1] + (np.arange(1, padding + 1) * dt)
-    times = np.concatenate([times, padding_times])
-    
+    padding_times = padding_times.reshape((len(padding_times), 1))
+    times = np.concatenate((times, padding_times))
     # Extract specific AP and add padding
     v_segment = MEMBRANE_POTENTIAL[:, idx]
-    v_padding = np.ones(padding) * v_segment[-1]
-    v = np.concatenate([v_segment, v_padding]).reshape(-1, 1)
-    
+    v_segment = v_segment.reshape(-1, 1)
+    v_padding = np.ones(padding) * MEMBRANE_POTENTIAL[-1, idx]
+    v_padding = v_padding.reshape(-1, 1)
+    v = np.concatenate((v_segment, v_padding))
+    np.savetxt("v.txt", v)
+
     # Calculate derivatives (preserving MATLAB structure)
-    dv = np.vstack([np.diff(v, axis=0), np.zeros((1, v.shape[1]))])
-    ddv = np.vstack([np.diff(dv, axis=0), np.zeros((1, dv.shape[1]))])
+    if isinstance(idx, int):
+        s = 1
+    else:
+        s = len(idx)
+    dv = np.vstack((np.diff(v, axis=0), np.zeros((1, s))))
+    ddv = np.vstack((np.diff(dv, axis=0), np.zeros((1, s))))
 
     # ---------calculate extracellular potential------------
     EP = np.zeros(ddv.shape)
     for i in range(v.shape[1]):
         for t_idx in range(len(times)):
             # mask = 1./sqrt((times-times(t)).^2+d^2)'
-            mask = 1.0 / np.sqrt((times - times[t_idx])**2 + d**2)
+            mask = 1.0 / np.sqrt((times - times[t_idx])**2 + d**2).T
             EP[t_idx, i] = np.sum(ddv[:, i] * mask)
 
     # ----------------------------------------------------
@@ -72,15 +76,15 @@ def generate_EP(d=0.01, plotOn=0, Axontype=1):
     i_max_ap = np.argmax(AP2_raw)
     AP2_norm = AP2_raw / max_val_ap
     
-    f_ap = interp1d(times - times[i_max_ap], AP2_norm, kind='linear', fill_value="extrapolate")
-    AP2 = f_ap(times2)
+    f_ap = interp1d((times - times[i_max_ap]).flatten(), AP2_norm, kind='linear')
+    AP2 = f_ap(times2).T
     
     # Process EP2
     min_val_ep = np.min(EP)
     i_min_ep = np.argmin(EP)
     EP2_norm = EP.flatten() / np.abs(min_val_ep)
     
-    f_ep = interp1d(times - times[i_min_ep], EP2_norm, kind='linear', fill_value="extrapolate")
-    EP2 = f_ep(times2)
-
+    f_ep = interp1d((times - times[i_min_ep]).flatten(), EP2_norm, kind='linear')
+    EP2 = f_ep(times2).T
+    np.savetxt("EP2.txt", EP2)
     return EP2, times2, AP2
