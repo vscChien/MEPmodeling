@@ -1,8 +1,10 @@
 import os
+import h5py
 import shutil
 import numpy as np
 from datetime import datetime
 import matplotlib.pyplot as plt
+from load_h5 import load_h5_to_dict
 from scipy.io import loadmat, savemat
 from MEPmodel_bio import MEPmodel_bio
 from config_model_bio import config_model_bio
@@ -23,7 +25,8 @@ def ga_MEPmodel_bio(subj, withRC=2, AMPAweight=None, reRun=0):
     # run GA or load existing results
     if os.path.exists(result_file) and not reRun:
         print(f"Use fitted result: \n{ref['resultname']}")
-        tmp = loadmat(result_file)
+        with h5py.File(result_file, 'r') as f:
+            tmp = load_h5_to_dict(f)
         # Flattening to ensure it's a 1D array as expected in Python
         p_post = tmp['p_post'].flatten()
     else:
@@ -86,7 +89,7 @@ def run_ga(ref):
     
     # Collect previous solutions from file
     root = os.path.dirname(os.path.abspath(__file__))
-    tmpname = os.path.join(root, 'fitted_results', 'bio', f"result_bio_s{ref['subj']}.mat")
+    tmpname = os.path.join(root, 'fitted_results', 'bio', f"result_bio_s{ref['subj']}.csv")
     solution_ini = np.empty((0, nParams))
     
     if os.path.exists(tmpname):
@@ -99,7 +102,7 @@ def run_ga(ref):
     for AMPAw in np.arange(0.2, 0.9, 0.1):
         # Format float to match MATLAB's %g
         tmpname_fixed = os.path.join(root, 'fitted_results', 'bio', 'fixed_AMPAweight', 
-                                     f"result_bio_s{ref['subj']}[{AMPAw:g}].mat")
+                                     f"result_bio_s{ref['subj']}[{AMPAw:g}].csv")
         if os.path.exists(tmpname_fixed):
             print(f"{tmpname_fixed} found.")
             tmp_fixed = loadmat(tmpname_fixed)
@@ -256,7 +259,7 @@ def run_ga(ref):
     result_path = os.path.join(root, ref['resultname'])
     if os.path.exists(result_path):
         date_tag = datetime.now().strftime('%Y-%m%d-%H%M')
-        backup_name = f"{ref['resultname'][:-4]}_backup-{date_tag}.mat"
+        backup_name = f"{ref['resultname'][:-4]}_backup-{date_tag}.csv"
         shutil.copy2(result_path, os.path.join(root, backup_name))
     
     # Save final results
