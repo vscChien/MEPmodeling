@@ -41,12 +41,17 @@
 
 
 import os
+import h5py
 import numpy as np
+from load_h5 import load_h5_to_dict
 import matplotlib.pyplot as plt
 
-# from scipy.io import loadmat, savemat
-# from MEPmodel_bio import MEPmodel_bio
-# from config_model_bio import config_model_bio
+from scipy.io import loadmat, savemat
+from MEPmodel_bio import MEPmodel_bio
+from config_model_bio import config_model_bio
+
+from ga_MEPmodel_bio import ga_MEPmodel_bio
+ga_MEPmodel_bio(1,1,[],0)
 
 # root = os.getcwd()
 
@@ -60,7 +65,8 @@ import matplotlib.pyplot as plt
 # # run GA or load existing results
 # if os.path.exists(result_file) and not 0:
 #     print(f"Use fitted result: \n{ref['resultname']}")
-#     tmp = loadmat(result_file)
+#     with h5py.File(result_file, 'r') as f:
+#         tmp = load_h5_to_dict(f)
 #     # Flattening to ensure it's a 1D array as expected in Python
 #     p_post = tmp['p_post'].flatten()
 # # show result
@@ -70,25 +76,25 @@ import matplotlib.pyplot as plt
 # from config_model_bio import config_model_bio
 # config_model_bio(1,1,0.5)
 #############################################################
-from gen_kernels import gen_kernels
-from scipy.io import loadmat
-tlength = 50 # ms
-dt = 0.1 # ms
-AMPA, NMDA = gen_kernels(dt,tlength)
+# from gen_kernels import gen_kernels
+# from scipy.io import loadmat
+# tlength = 50 # ms
+# dt = 0.1 # ms
+# AMPA, NMDA = gen_kernels(dt,tlength)
 
-m = loadmat("AMPA.mat")
-m = np.array(m["AMPA"])
-p = AMPA#np.loadtxt("AMPA.txt")
+# m = loadmat("AMPA.mat")
+# m = np.array(m["AMPA"])
+# p = AMPA#np.loadtxt("AMPA.txt")
 
-print(np.nanmax(np.subtract(p,m)))
-print(np.nanargmax(np.subtract(p,m)))
+# print(np.nanmax(np.subtract(p,m)))
+# print(np.nanargmax(np.subtract(p,m)))
 
-m = loadmat("NMDA.mat")
-m = np.array(m["NMDA"])
-p = NMDA#np.loadtxt("NMDA.txt")
+# m = loadmat("NMDA.mat")
+# m = np.array(m["NMDA"])
+# p = NMDA#np.loadtxt("NMDA.txt")
 
-print(np.nanmax(np.subtract(p,m)))
-print(np.nanargmax(np.subtract(p,m)))
+# print(np.nanmax(np.subtract(p,m)))
+# print(np.nanargmax(np.subtract(p,m)))
 #############################################################
 # from generate_EP import generate_EP
 # # generate_EP(0.1, 1,2)
