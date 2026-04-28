@@ -86,5 +86,6 @@ def generate_EP(d=0.01, plotOn=0, Axontype=1):
     
     f_ep = interp1d((times - times[i_min_ep]).flatten(), EP2_norm, kind='linear')
     EP2 = f_ep(times2).T
+    #EP2 = EP2.reshape(-1, 1) # rehsape to column vector
     np.savetxt("EP2.txt", EP2)
     return EP2, times2, AP2
