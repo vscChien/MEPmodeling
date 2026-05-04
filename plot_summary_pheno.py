@@ -147,10 +147,6 @@ def plot_summary_pheno(p, ref):
 
 
 # ==========================================================================
-def _sigmoid(x, a, r, x0):
-    return a / (1.0 + np.exp(r * (x0 - x)))
-
-
 def get_iocurve(simMEP, ref):
     # reload single-trial MEP for std of IO curve
     _, _, _, _, _, y0all = load_MEP(ref['subj'], ref['intensity_idx'], [20, 50], 0)
