@@ -40,18 +40,15 @@
 
 
 
-import os
-import h5py
-import numpy as np
-from load_h5 import load_h5_to_dict
-import matplotlib.pyplot as plt
+# import os
+# import h5py
+# import numpy as np
+# from load_h5 import load_h5_to_dict
+# import matplotlib.pyplot as plt
 
-from scipy.io import loadmat, savemat
-from MEPmodel_bio import MEPmodel_bio
-from config_model_bio import config_model_bio
-
-from ga_MEPmodel_bio import ga_MEPmodel_bio
-ga_MEPmodel_bio(1,1,[],0)
+# from scipy.io import loadmat, savemat
+# from MEPmodel_bio import MEPmodel_bio
+# from config_model_bio import config_model_bio
 
 # root = os.getcwd()
 
@@ -132,8 +129,10 @@ ga_MEPmodel_bio(1,1,[],0)
 # intensity_idx = np.arange(0, 10)
 # load_MEP(subj, intensity_idx, [20, 50], 1)
 #############################################################
+# from ga_MEPmodel_bio import ga_MEPmodel_bio
+# ga_MEPmodel_bio(1,1,[],0)
 # from gen_DIwave import gen_DIwave
-# from deconv_DIwave2 import deconv_DIwave
+# from deconv_DIwave4 import deconv_DIwave
 # import numpy as np
 # from scipy.io import loadmat
 
@@ -147,6 +146,15 @@ ga_MEPmodel_bio(1,1,[],0)
 # DIwave0=np.zeros((len(intensities), len(t)))
 # for i in range(len(intensities)):
 #     DIwave0[i,:] = gen_DIwave(t, intensities[i] / RMT)
+
+# m = loadmat("DIwave0.mat")
+# m = np.array(m["DIwave0"])
+# p = DIwave0
+# np.savetxt("DIwave0.txt", DIwave0)
+# print("DIwave0 discrepancy ", np.nanmax(np.subtract(p,m)))
+# print(np.nanargmax(np.subtract(p,m)))
+
+
 # DIwave = deconv_DIwave(t, DIwave0, ref)
 # np.savetxt("DIwave.txt", DIwave)
 
@@ -159,10 +167,38 @@ ga_MEPmodel_bio(1,1,[],0)
 
 # # plt.show()
 
+# m = loadmat("EP.mat")
+# m = np.array(m["EP"])
+# p = np.loadtxt("EP.txt")
+# print("EP discreapancy ", np.nanmax(np.subtract(p.reshape(-1,1),m)))
+# print(np.nanargmax(np.subtract(p,m)))
 
-# m = loadmat("DIwave.mat")
+
+# m = loadmat("DIwave3.mat")
+# m = np.array(m["DIwave3"])
+# p = np.loadtxt("Diwave3.txt")
+# print("DIwave3 discreapancy ", np.nanmax(np.subtract(p,m)))
+# print(np.nanargmax(np.subtract(p,m)))
+
+# m = loadmat("rate.mat")
+# m = np.array(m["rate1"])
+# p = np.loadtxt("rate1.txt")
+# print("Rate ", np.nanmax(np.subtract(p,m)))
+# print(np.nanargmax(np.subtract(p,m)))
+
+# m = loadmat("DIwave_deconv.mat")
 # m = np.array(m["DIwave"])
 # p = np.loadtxt("DIwave.txt")
-
-# print(np.nanmax(np.subtract(p,m)))
+# print("DIwave discreapancy ", np.nanmax(np.subtract(p,m)))
 # print(np.nanargmax(np.subtract(p,m)))
+# mse = np.nanmean((p - m)**2)
+# print(f"Mean Squared Error between Python and MATLAB: {mse:.2e}")
+
+##########################################################################
+# Phenomenological model
+from config_model_pheno import config_model_pheno
+config_model_pheno(1)
+
+
+# from ga_MEPmodel_pheno import ga_MEPmodel_pheno
+# ga_MEPmodel_pheno(1,0)
