@@ -105,7 +105,7 @@ def plot_summary(p, ref):
     text_params = {'fontsize': 7, 'backgroundcolor': 'none'}
     ax3.text(15, ylimit3[1] * 0.8, f'R: [{R[0]:.1f}, {R[99]:.1f}]', color='k', **text_params)
     
-    if 'withRC' in ref['model']:
+    if ref['model']['withRC']:
         ax3.text(15, ylimit3[1] * 0.7, f'Wexc: [{Wexc[0]:.1f}, {Wexc[99]:.1f}]', color='b', **text_params)
         ax3.text(15, ylimit3[1] * 0.6, f'Winh*R: [{RWinh[0]:.1f}, {RWinh[99]:.1f}]', color='m', **text_params)
         ax3.text(30, ylimit3[1] * 0.5, f'RCth= {np.round(p[9], 1)}', color='k', **text_params)
