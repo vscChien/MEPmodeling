@@ -47,8 +47,8 @@ def config_model_pheno(subj):
 
     ref['resultname'] = os.path.join(
         'fitted_results', 'pheno',
-        f'result_pheno_s{subj}.mat'
+        f'result_pheno_s{subj}.h5'
     )
-    ref['figname'] = ref['resultname'][:-4] + '.svg'
+    ref['figname'] = ref['resultname'][:-4] + '.png'
 
     return ref
