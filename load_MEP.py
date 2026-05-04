@@ -17,8 +17,6 @@ def load_MEP(subj, iidx=None, tcrop=[20, 50], plotOn=1):
         f"S{subj}_Magstim_data",
         f"S{subj}.h5"
     )
-
-    print(mat_path)
     
     with h5py.File(mat_path, 'r') as f:
         tmp = load_h5_to_dict(f)

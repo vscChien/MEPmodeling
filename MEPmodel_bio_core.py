@@ -75,13 +75,6 @@ def MEPmodel_bio_core(model):
             input_vec = np.array([mMN[tt], mMN[tt], mRC[tt]])
 
             dv  = v2[:, tt]
-            # print("shape tau ", np.shape(tau))
-            # print("shape input vec ", np.shape(input_vec))
-            # print("shape h ", np.shape(h))
-            # print("shape v ", np.shape(v))
-            # print("shape v2 ", np.shape(v2))
-            # print("tt", tt)
-
             h = h.flatten()
 
 
@@ -89,12 +82,6 @@ def MEPmodel_bio_core(model):
 
             v[:, tt + 1]  = v[:, tt]  + dv * dt
             v2[:, tt + 1] = v2[:, tt] + dv2 * dt
-
-            # print("shape dv ", np.shape(dv))
-            # print("shape dv2 ", np.shape(dv2))
-
-
-
 
             if withRC: 
                 ginh[tt] = v[2, tt]
