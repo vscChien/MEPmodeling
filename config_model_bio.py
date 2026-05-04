@@ -132,6 +132,6 @@ def config_model_bio(subj, withRC, AMPAweight=[]):
             ref["resultname"] = os.path.join("fitted_results", "bio", "fixed_AMPAweight", f"result_bio_s{subj}.h5")
     else:
             ref["resultname"] = os.path.join("fitted_results", "bioNoRC", f"result_bioNoRC_s{subj}.h5")
-    ref["figname"] = ref["resultname"][:-4]+".svg"
+    ref["figname"] = ref["resultname"][:-3]+".svg"
 
     return ref

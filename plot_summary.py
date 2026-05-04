@@ -1,7 +1,7 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
-#from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 from sigmoid import sigmoid
 from load_MEP import load_MEP
@@ -150,6 +150,10 @@ def plot_summary(p, ref):
     ax4.set_title('MU trigger time', fontsize=9)
     ax4.spines['top'].set_visible(False)
     ax4.spines['right'].set_visible(False)
+
+    if 'figname' in ref:
+        root = os.path.dirname(os.path.abspath(__file__))
+        fig.savefig(os.path.join(root, ref['figname']))
 
     plt.show()
 
