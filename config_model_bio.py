@@ -56,10 +56,7 @@ def config_model_bio(subj, withRC, AMPAweight=[]):
     model["DIwave0"] = np.zeros((len(ref["intensities"]), len(t)))
     for i in range(len(ref["intensities"])):
         model["DIwave0"][i,:] = gen_DIwave(t, ref["intensities"][i] / ref["RMT"])
-    #model["DIwave"] = deconv_DIwave(t, model["DIwave0"], ref)
-    from scipy.io import loadmat
-    model["DIwave"] = loadmat("DIwave.mat")
-    model["DIwave"] = model["DIwave"]["DIwave"]
+    model["DIwave"] = deconv_DIwave(t, model["DIwave0"], ref)
 
     # ----- AMPA, NMDA kernels -----
     model["AMPA"], model["NMDA"] = gen_kernels(dt, tlength)
