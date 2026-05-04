@@ -16,8 +16,7 @@ def plot_param_panel_pheno(p, ref):
     boundary      = ref.get('boundary', None)
     boundary_text = ref['boundarytext']
 
-    # fig = plt.figure(figsize=(800 / 96, 600 / 96))   # ~800x600 px at 96 dpi
-    fig = plt.figure(figsize=(10, 8)) # Replicating set(gcf,'position',[50 50 800 600]) ratio
+    fig = plt.figure(figsize=(10, 8)) 
 
     # ------------------------------------------------------------------
     # Row 1 – parameter sliders
@@ -144,7 +143,6 @@ def plot_param_panel_pheno(p, ref):
         counts, edges = np.histogram(st, bins=bins, density=False)
         bin_width = edges[1] - edges[0]
         centers   = edges[:-1] + bin_width / 2
-        # countdensity = counts / bin_width (matches MATLAB 'countdensity')
         ax_hist.plot(centers, counts / bin_width, linewidth=1.5)
 
     ax_hist.set_xlim([15, 50])
