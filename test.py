@@ -196,9 +196,9 @@
 
 ##########################################################################
 # Phenomenological model
-from config_model_pheno import config_model_pheno
-config_model_pheno(1)
+# from config_model_pheno import config_model_pheno
+# config_model_pheno(1)
 
 
-# from ga_MEPmodel_pheno import ga_MEPmodel_pheno
-# ga_MEPmodel_pheno(1,0)
+from ga_MEPmodel_pheno import ga_MEPmodel_pheno
+ga_MEPmodel_pheno(1,0)
