@@ -61,7 +61,6 @@ def plot_summary(p, ref):
 
     # --- Nexttile(2): IO Curve ---
     ax2 = fig.add_subplot(gs[0, 1])
-    # Assume get_iocurve is defined elsewhere as per prompt
     IO, simIO, myfit1, myfit2 = get_iocurve(simMEP, ref)
     
     x1 = np.linspace(IO[0, 0], IO[-1, 0], 100)
@@ -194,10 +193,7 @@ def get_iocurve(simMEP, ref):
     else:
         p0 = [40, 1.4, 10]  # default fallback
 
-    popt1, pcov1 = curve_fit(sigmoid, IO[:, 0], IO[:, 1], p0=p0)
-    popt2, pcov2 = curve_fit(sigmoid, simIO[:, 0], simIO[:, 1], p0=p0)
-
-    myfit1 = sigmoid(IO[:, 0], *popt1)
-    myfit2 = sigmoid(simIO[:, 0], *popt2)
+    popt1, _ = curve_fit(sigmoid, IO[:, 0], IO[:, 1], p0=p0)
+    popt2, _ = curve_fit(sigmoid, simIO[:, 0], simIO[:, 1], p0=p0)
 
     return IO, simIO, popt1, popt2
