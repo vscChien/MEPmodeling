@@ -49,6 +49,6 @@ def config_model_pheno(subj):
         'fitted_results', 'pheno',
         f'result_pheno_s{subj}.h5'
     )
-    ref['figname'] = ref['resultname'][:-4] + '.png'
+    ref['figname'] = ref['resultname'][:-3] + '.svg'
 
     return ref
