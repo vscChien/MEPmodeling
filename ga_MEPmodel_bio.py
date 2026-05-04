@@ -9,7 +9,7 @@ from scipy.io import loadmat, savemat
 from MEPmodel_bio import MEPmodel_bio
 from config_model_bio import config_model_bio
 
-def ga_MEPmodel_bio(subj, withRC=2, AMPAweight=None, reRun=0):
+def ga_MEPmodel_bio(subj, withRC=1, AMPAweight=None, reRun=0):
     """
     Main function for biological MEP model fitting using Genetic Algorithm.
     """
