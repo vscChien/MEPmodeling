@@ -281,7 +281,7 @@ def run_ga(ref):
     scipy.io.savemat(result_path, {
         'p_post': p_post,
         'KP':     KP_arr,
-        'ref':    ref,      # note: saving a dict to .mat; use pickle if preferred
+        'ref':    ref,     
         'P':      P,
         'KS':     KS_arr,
     })
