@@ -27,8 +27,8 @@ def plot_summary_pheno(p, ref):
         ax1.plot(t0, y0[:, col]    + offsets[col], 'k', linewidth=1.5)
         ax1.plot(t0, simMEP[:, col] + offsets[col], 'r', linewidth=1.0)
 
-    ss_res = np.sum((y0.ravel() - simMEP.ravel()) ** 2)
-    ss_tot = np.sum((y0.ravel() - y0.mean())       ** 2)
+    ss_res = np.sum((y0.ravel(order='F') - simMEP.ravel(order='F')) ** 2)
+    ss_tot = np.sum((y0.ravel(order='F') - y0.mean())       ** 2)
     R2     = 1.0 - ss_res / ss_tot
     ax1.set_title(f'MEP (R²= {R2:.2g})')
     ax1.set_yticks([])

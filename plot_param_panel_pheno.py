@@ -52,8 +52,8 @@ def plot_param_panel_pheno(p, ref):
     ax_mep.plot(y0.flatten(order='F'),     'k', linewidth=2, label='MEP')
     ax_mep.plot(simMEP.flatten(order='F'), 'r', linewidth=1, label='simMEP')
 
-    ss_res = np.sum((y0.ravel() - simMEP.ravel()) ** 2)
-    ss_tot = np.sum((y0.ravel() - y0.mean())       ** 2)
+    ss_res = np.sum((y0.ravel(order='F') - simMEP.ravel(order='F')) ** 2)
+    ss_tot = np.sum((y0.ravel(order='F') - y0.mean())       ** 2)
     R2     = 1.0 - ss_res / ss_tot
     print(f'R² = {R2:.4g}')
     ax_mep.set_title(
@@ -65,7 +65,7 @@ def plot_param_panel_pheno(p, ref):
     nI = simMEP.shape[1]
     for k in range(1, nI):
         ax_mep.axvline(x=k * nT, color='k')
-    ax_mep.set_xlim([0, len(simMEP.ravel())])
+    ax_mep.set_xlim([0, len(simMEP.ravel(order='F'))])
     ax_mep.set_xlabel(f'Time ({ref["tcrop"][0]}-{ref["tcrop"][1]} ms)')
     ax_mep.set_xticks([(k + 0.5) * nT for k in range(nI)])  # invisible ticks for labels
     ax_mep.set_xticklabels([])
