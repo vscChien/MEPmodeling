@@ -8,6 +8,16 @@ from load_h5 import load_h5_to_dict
 from scipy.io import loadmat, savemat
 from MEPmodel_bio import MEPmodel_bio
 from config_model_bio import config_model_bio
+from GA.ga_toolbox.population        import population
+from GA.ga_toolbox.gradient_search   import gradient_search
+from GA.ga_toolbox.selection_best    import selection_best
+from GA.ga_toolbox.selection_uniq    import selection_uniq
+from GA.ga_toolbox.crossover         import crossover
+from GA.ga_toolbox.mutation          import mutation
+from GA.ga_toolbox.mutationV         import mutationV
+from GA.ga_toolbox.mutation_single   import mutation_single
+from GA.ga_toolbox.fitness_function  import fitness_function
+from GA.gradient_toolbox.evaluation  import evaluation
 
 def ga_MEPmodel_bio(subj, withRC=1, AMPAweight=None, reRun=0):
     """

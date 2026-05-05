@@ -14,23 +14,23 @@ import os
 import sys
 import h5py
 import shutil
-import numpy as np
 import scipy.io
+import numpy as np
 from datetime import datetime
 import matplotlib.pyplot as plt
 from load_h5 import load_h5_to_dict
 from config_model_pheno import config_model_pheno
 from MEPmodel_pheno import MEPmodel_pheno
-# from GA.ga_toolbox.population        import population
-# from GA.ga_toolbox.evaluation        import evaluation
-# from GA.ga_toolbox.selection_best    import selection_best
-# from GA.ga_toolbox.selection_uniq    import selection_uniq
-# from GA.ga_toolbox.crossover         import crossover
-# from GA.ga_toolbox.mutation          import mutation
-# from GA.ga_toolbox.mutationV         import mutationV
-# from GA.ga_toolbox.mutation_single   import mutation_single
-# from GA.ga_toolbox.fitness_function  import fitness_function
-# from GA.gradient_toolbox.gradient_search import gradient_search
+from GA.ga_toolbox.population        import population
+from GA.ga_toolbox.gradient_search   import gradient_search
+from GA.ga_toolbox.selection_best    import selection_best
+from GA.ga_toolbox.selection_uniq    import selection_uniq
+from GA.ga_toolbox.crossover         import crossover
+from GA.ga_toolbox.mutation          import mutation
+from GA.ga_toolbox.mutationV         import mutationV
+from GA.ga_toolbox.mutation_single   import mutation_single
+from GA.ga_toolbox.fitness_function  import fitness_function
+from GA.gradient_toolbox.evaluation  import evaluation
 
 
 def ga_MEPmodel_pheno(subj, reRun=0):
@@ -108,7 +108,8 @@ def run_ga(ref):
     solution_ini = np.empty((0, nParams))
     if os.path.isfile(tmpname):
         print(f'{tmpname} found.')
-        tmp          = scipy.io.loadmat(tmpname, squeeze_me=True)
+        with h5py.File(tmpname, 'r') as f:
+            tmp = load_h5_to_dict(f)
         solution_ini = np.atleast_2d(tmp['p_post'])
 
     # rectify min/max
@@ -120,7 +121,7 @@ def run_ga(ref):
     P     = population(N1, nParams, LR, UR)
     if solution_ini.size > 0:
         P = np.vstack([P, solution_ini])
-    E, R  = evaluation(P, myfunc, ref)
+    E, R, _  = evaluation(P, myfunc, ref)
     P, E, R = selection_best(P, E, R, N1, op)
     R1    = R[:, 0]
     print('done')
@@ -192,7 +193,7 @@ def run_ga(ref):
         print(f'current best Loss: {KS[-1]}')
         print('========')
 
-        gof = fitness_function(ref['y0'].ravel(), R1)
+        gof = fitness_function(ref['y0'].ravel(order='F'), R1)
         print('========')
         print(f'current best R2: {gof}')
         print('========')
@@ -232,8 +233,8 @@ def run_ga(ref):
         axes[2].plot(KP[-1], '-ko')
         axes[2].set_title('parameter')
 
-        axes[3].plot(ref['y0'].ravel(), 'k', linewidth=1.5)
-        axes[3].plot(houtput['sim']['simMEP2'].ravel(), 'r', linewidth=1.0)
+        axes[3].plot(ref['y0'].ravel(order='F'), 'k', linewidth=1.5)
+        axes[3].plot(houtput['sim']['simMEP2'].ravel(order='F'), 'r', linewidth=1.0)
         axes[3].set_title('target & best fit')
 
         axes[4].plot(GA_arr, 'b.')
