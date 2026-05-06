@@ -294,44 +294,63 @@ def ga_run(ref, objective_function,
     w          = 0    # generation index
 
     # ----- initialisation -----
-    print('======== Initialization ========')
+    print('=' * 60)
+    print('  INITIALIZATION')
+    print(f'  Population size : {N1}   nParams : {nParams}')
+    print(f'  Max generations : {tg}   op      : {"minimise" if op == -1 else "maximise"}')
+    print('=' * 60)
     P = population(N1, nParams, LR, UR)
+    n_ini = 0
     if solution_ini is not None and np.asarray(solution_ini).size > 0:
-        P = np.vstack([P, np.atleast_2d(solution_ini)])
+        ini_arr = np.atleast_2d(solution_ini)
+        P = np.vstack([P, ini_arr])
+        n_ini = ini_arr.shape[0]
+    print(f'  Evaluating {P.shape[0]} solutions ({N1} random + {n_ini} seeded)...')
     E, R, _  = evaluation(P, objective_function, ref)
     P, E, R  = selection_best(P, E, R, N1, op)
     R1       = R[:, 0]
-    print('done')
-    print(f'Minimum cost: {E[0]}')
-    print('================================')
+    print(f'  Initialization done  |  best fit = {E[0]:.6g}  |  mean fit = {E.mean():.6g}')
+    print('=' * 60)
     E_crit = E[0]
 
     # ----- main loop -----
     # R convention throughout: [nData x n_pop]  (columns = solutions)
+    import time as _time
+    t_run_start = _time.time()
     j = 1
     while True:
-        # --- gradient search on best solution ---
-        print('======= Gradient search ========')
-        # gradient_search returns r_post as [nData x N]
+        t_gen_start = _time.time()
+        print()
+        print('=' * 60)
+        print(f'  GENERATION {j} / {tg}')
+        print(f'  Current best fit = {E[0]:.6g}  |  mean fit = {E.mean():.6g}')
+        print('=' * 60)
+
+        # ── Step 1: gradient search on best solution ──────────────────────────
+        print(f'\n[Step 1/3]  Gradient search on best solution')
+        t1 = _time.time()
         Para_E_grd, E_grd, R_grd = gradient_search(
             P[0, :].reshape((1, -1)), R1.reshape((1, -1)), conf, E_crit
         )
-        # Para_E_grd: [1 x nParams], E_grd: [1,], R_grd: [nData x 1]
         if op * E_grd[0] > op * E[0]:
+            print(f'  ✓ improved: {E[0]:.6g} → {E_grd[0]:.6g}  ({_time.time()-t1:.1f}s)',
+                  flush=True)
             P[0, :]  = Para_E_grd[0]
             E[0]     = E_grd[0]
             R[:, 0]  = R_grd[:, 0]
-        print('done')
+        else:
+            print(f'  – no improvement  (best = {E[0]:.6g}, grad result = {E_grd[0]:.6g})'
+                  f'  ({_time.time()-t1:.1f}s)', flush=True)
 
-        # --- single-parameter mutation ---
-        print('======= single-parameter mutation ========')
+        # ── Step 2: single-parameter mutation + gradient search ───────────────
+        print(f'\n[Step 2/3]  Single-parameter mutation  ({nParams} candidates)')
+        t2 = _time.time()
         P_        = mutation_single(P[0, :], LR, UR)
         E_, R_, _ = evaluation(P_, objective_function, ref)
-        # R_: [nData x nParams]
-        print('done')
+        print(f'  Mutation evaluation done  |  best candidate fit = {E_.min():.6g}'
+              f'  ({_time.time()-t2:.1f}s)', flush=True)
 
-        # --- gradient search on each mutated candidate ---
-        print('======= Gradient search ========')
+        print(f'  Gradient search on {len(E_)} mutated candidates:')
         nData          = R_.shape[0]
         n_cands        = len(E_)
         Para_E_grd_arr = np.zeros_like(P_)
@@ -339,45 +358,56 @@ def ga_run(ref, objective_function,
         R_grd_arr      = np.zeros((nData, n_cands))
 
         for i in range(n_cands):
-            if verbose > 0:
-                print(f'[{i + 1}/{n_cands}] cost: {E_[i]:.6f}')
-            # Pass residual for candidate i as a column vector
+            print(f'\n  [mutation candidate {i+1}/{n_cands}]  '
+                  f'pre-gradient fit = {E_[i]:.6g}', flush=True)
             P_grd_i, E_grd_i, R_grd_i = gradient_search(
                 P_[i, :].reshape((1, -1)), R_[:, i].reshape((1, -1)), conf, E_crit
             )
             Para_E_grd_arr[i, :] = P_grd_i[0]
             E_grd_arr[i]         = E_grd_i[0]
             R_grd_arr[:, i]      = R_grd_i[:, 0]
+            delta = E_grd_arr[i] - E_[i]
+            marker = '✓' if op * delta > 0 else '–'
+            print(f'  {marker} candidate {i+1}/{n_cands}  ' +
+                  f'post-gradient fit = {E_grd_arr[i]:.6g}  (Δ = {delta:+.4g})',
+                  flush=True)
 
+        n_improved = int(np.sum(op * E_grd_arr > op * E_))
         idx            = op * E_grd_arr > op * E_
         P_[idx, :]     = Para_E_grd_arr[idx, :]
         E_[idx]        = E_grd_arr[idx]
         R_[:, idx]     = R_grd_arr[:, idx]
+        print(f'\n  Mutation+gradient done: {n_improved}/{n_cands} candidates improved'
+              f'  ({_time.time()-t2:.1f}s total)', flush=True)
 
         P = np.vstack([P, P_])
         E = np.concatenate([E, E_])
         R = np.hstack([R, R_])
-        print('done')
 
         _, E_show, _ = selection_best(P, E, R, 1, op)
-        print(f'best after gradient: {E_show}')
+        print(f'  Best after Steps 1–2: {E_show:.6g}', flush=True)
 
-        # --- GA operators ---
-        print('GA search...')
+        # ── Step 3: GA operators ──────────────────────────────────────────────
+        n_offspring = N1 + 2*N2 + 2*N3
+        print(f'\n[Step 3/3]  GA operators')
+        print(f'  {N1} mutV  +  {2*N2} crossover  +  {2*N3} mutation  =  {n_offspring} offspring')
+        t3 = _time.time()
         P_mutV  = mutationV(P[:N1, :], 0.1, 0.9, LR, UR)
         P_cross = crossover(P, N2)
         P_mut   = mutation(P, N3)
         P_new   = np.vstack([P_mutV, P_cross, P_mut])
 
+        print(f'  Evaluating {n_offspring} offspring...', flush=True)
         E_new, _, _ = evaluation(P_new, objective_function, ref)
         P = np.vstack([P, P_new])
         E = np.concatenate([E, E_new])
 
         P, E = selection_uniq(P, E, N1, N1, op, LR, UR)
         _, R1_2d, _ = evaluation(P[[0], :], objective_function, ref)
-        R1 = R1_2d[:, 0]   # [nData,] — residual of current best
-        print('done')
+        R1 = R1_2d[:, 0]
+        print(f'  GA operators done  ({_time.time()-t3:.1f}s)', flush=True)
 
+        # ── Generation summary ────────────────────────────────────────────────
         avg_cost  = E.mean()
         best_cost = E[0]
         K.append([avg_cost, best_cost])
@@ -385,21 +415,22 @@ def ga_run(ref, objective_function,
         KS.append(E[0])
         E_crit = E[0]
 
-        print('========')
-        print(f'current best Loss: {KS[-1]}')
-        print('========')
-
+        ga_worked = bool(E_show > E[0])
+        GA_counter.append(1 if ga_worked else 0)
         gof = fitness_function(ref['y0'].ravel(order='F'), R1)
-        print('========')
-        print(f'current best R2: {gof}')
-        print('========')
+        suc_rate = sum(GA_counter) / len(GA_counter)
+        t_gen = _time.time() - t_gen_start
 
-        if E_show > E[0]:
-            print('GA works')
-            GA_counter.append(1)
-        else:
-            print("GA doesn't work")
-            GA_counter.append(0)
+        print()
+        print('─' * 60)
+        print(f'  GENERATION {j} / {tg}  SUMMARY  ({t_gen:.1f}s)')
+        print(f'  Best fit      : {KS[-1]:.6g}')
+        print(f'  Mean fit      : {E.mean():.6g}')
+        print(f'  R² (best)     : {gof:.4f}')
+        print(f'  GA effective  : {"yes ✓" if ga_worked else "no  ✗"}'
+              f'  (success rate {suc_rate:.0%}, {sum(GA_counter)}/{len(GA_counter)})')
+        print(f'  Total elapsed : {_time.time()-t_run_start:.1f}s')
+        print('─' * 60)
 
         # ----- online plot (if callback provided) -----
         if plot_callback is not None:
@@ -409,8 +440,10 @@ def ga_run(ref, objective_function,
         j += 1
 
         if j > tg:
+            print(f'\n  Reached max generations ({tg}).', flush=True)
             break
         if KS[-1] < 0.01:
+            print(f'\n  Early stop: fit {KS[-1]:.6g} < 0.01.', flush=True)
             break
 
     # ----- select best result -----

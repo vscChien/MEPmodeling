@@ -6,6 +6,7 @@ Imported by Optimizer.py and available for direct use.
 """
 
 import numpy as np
+import time as _time
 
 
 def ga_population(N, nParams, LR, UR):
@@ -394,7 +395,9 @@ def ga_evaluation(X, objective_function, reference):
     Houtput = [None] * n_pop
 
     for j in range(n_pop):
+        t0 = _time.time()
         error, houtput = objective_function(X[j], reference)
+        elapsed = _time.time() - t0
         error_flat = np.atleast_1d(error).ravel()
         fit = np.sum(error_flat ** 2)
 
@@ -403,6 +406,8 @@ def ga_evaluation(X, objective_function, reference):
         errors[:, j] = error_flat
         fits[j]      = fit
         Houtput[j]   = houtput
+        print(f'    eval [{j+1:3d}/{n_pop}]  fit = {fit:.6g}  ({elapsed:.2f}s)',
+              flush=True)
 
     return fits, errors, Houtput
 
@@ -440,7 +445,11 @@ def ga_gauss_newton_slow(op, Para_E_test, r_test, reg0, reg1, steps, loop, tol,
     Para_E_test = np.atleast_1d(Para_E_test).ravel()
     r_test      = np.atleast_1d(r_test).ravel()
 
+    print(f'  Gradient descent  (max {loop} steps, tol={tol:g})', flush=True)
+    t_gd_start = _time.time()
     while j <= loop:
+        print(f'    step [{j:3d}/{loop}]  computing Jacobian...', end=' ', flush=True)
+        t_step = _time.time()
         J = ga_NMM_diff_A_lfm(Para_E_test, r_test, function_call)
         Para_E_new_group = ga_multi_lavenberg_regularization(
             steps, reg0, reg1, Para_E_test, J, r_test, LR, UR
@@ -456,14 +465,28 @@ def ga_gauss_newton_slow(op, Para_E_test, r_test, reg0, reg1, steps, loop, tol,
         r_test      = r_new
         Para_E_test = np.atleast_1d(Para_E_new).ravel()
 
+        improvement = float(op * (fit_new - fit_[-1])) if fit_ else float('nan')
         fit_.append(fit_new)
         Para_E_.append(Para_E_test.copy())
         error_.append(r_test.copy())
+
+        elapsed_step = _time.time() - t_step
+        if len(fit_) == 1:
+            print(f'fit = {fit_new:.6g}  ({elapsed_step:.2f}s)', flush=True)
+        else:
+            print(f'fit = {fit_new:.6g}  Δ = {improvement:+.4g}  ({elapsed_step:.2f}s)',
+                  flush=True)
         j += 1
 
         if len(fit_) > 1 and op * (fit_[-1] - fit_[-2]) < tol:
-            print(f'Quit: improvement < tol({tol})')
+            print(f'    → converged at step {j-1}: improvement {improvement:+.4g} < tol({tol:g})',
+                  flush=True)
             break
+
+    elapsed_gd = _time.time() - t_gd_start
+    best_gd = float(min(fit_) if op == -1 else max(fit_))
+    print(f'  Gradient descent done: {j-1} steps, best fit = {best_gd:.6g}, '
+          f'total time = {elapsed_gd:.1f}s', flush=True)
 
     if j == loop:
         Para_E_after_g, fit_after_g, error_after_g = ga_selection_best(
@@ -518,8 +541,8 @@ def ga_gradient_search(P, r, conf, stop_crit, verbose=0):
     r_post   = None   # allocated on first iteration once true error length is known
 
     for i in range(N):
-        if verbose > 0:
-            print(f' {i + 1}/{N}')
+        print(f'  [gradient search  candidate {i+1}/{N}]', flush=True)
+        t_cand = _time.time()
         fit_i, P_i, r_i = ga_gauss_newton_slow(
             conf['op'],
             P[i],
@@ -542,6 +565,8 @@ def ga_gradient_search(P, r, conf, stop_crit, verbose=0):
         fit_post[i]  = fit_i
         P_post[i]    = P_i
         r_post[i]    = r_i
+        print(f'  [gradient search  candidate {i+1}/{N}  final fit = {fit_i:.6g}  ' +
+              f'time = {_time.time()-t_cand:.1f}s]', flush=True)
 
     # Transpose so output is [nData x N] — same convention as ga_evaluation
     return P_post, fit_post, r_post.T
