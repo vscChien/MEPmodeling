@@ -1,11 +1,11 @@
 """
-Phenomenological model
+Phenomenological model entry point.
 
 Example usage:
     from ga_MEPmodel_pheno import ga_MEPmodel_pheno
     ga_MEPmodel_pheno(subj=1, reRun=0)
 
-    subj  : subject 1~10
+    subj  : subject 1–10
     reRun : 0 – load fitted result and plot simulated MEP
             1 – re-run model fitting (backs up previous fitted result)
 """
@@ -14,45 +14,14 @@ import os
 import sys
 import h5py
 import shutil
-import scipy.io
 import numpy as np
 from datetime import datetime
 import matplotlib.pyplot as plt
-from load_h5 import load_h5_to_dict
+
+from load_h5            import load_h5_to_dict
 from config_model_pheno import config_model_pheno
-from MEPmodel_pheno import MEPmodel_pheno
-from GA.ga_toolbox.population        import population
-from GA.ga_toolbox.gradient_search   import gradient_search
-from GA.ga_toolbox.selection_best    import selection_best
-from GA.ga_toolbox.selection_uniq    import selection_uniq
-from GA.ga_toolbox.crossover         import crossover
-from GA.ga_toolbox.mutation          import mutation
-from GA.ga_toolbox.mutationV         import mutationV
-from GA.ga_toolbox.mutation_single   import mutation_single
-from GA.ga_toolbox.fitness_function  import fitness_function
-from GA.gradient_toolbox.evaluation  import evaluation
-
-
-def ga_MEPmodel_pheno(subj, reRun=0):
-    root = os.getcwd()
-
-    # ----- model setting -----
-    ref = config_model_pheno(subj)
-
-    # ----- run GA -----
-    result_path = os.path.join(root, ref['resultname'])
-    if os.path.isfile(result_path) and not reRun:
-        print(f'Use fitted result: \n{ref["resultname"]}')
-        with h5py.File(result_path, 'r') as f:
-            tmp = load_h5_to_dict(f)
-        # Flattening to ensure it's a 1D array as expected in Python
-        p_post = tmp['p_post'].flatten()
-    else:
-        p_post = run_ga(ref)
-
-    # ----- show result -----
-    plotOn = 1
-    MEPmodel_pheno(p_post, ref, plotOn)
+from MEPmodel_pheno     import MEPmodel_pheno
+from Optimizer          import ga_run
 
 
 # ==========================================================================
@@ -63,155 +32,155 @@ def objective_function(p, ref):
 
 
 # ==========================================================================
-def run_ga(ref):
-    root = os.path.dirname(os.path.abspath(__file__))
+def _to_h5_compatible(value):
+    """
+    Convert *value* to something h5py can write as a dataset.
 
-    myfunc  = objective_function
-    op      = -1        # -1: find minimum, +1: find maximum
+    Resolution order
+    ----------------
+    1. None              → store as empty bytes
+    2. dict              → signal caller to recurse (returns None sentinel)
+    3. str/bytes         → np.bytes_
+    4. bool              → int (must come before int check)
+    5. int / float       → as-is
+    6. np.ndarray
+       a. 0-d object     → unwrap and recurse
+       b. object dtype   → convert element-wise to str, store as bytes array
+       c. numeric/bool   → as-is
+    7. list / tuple      → convert to np.ndarray; fall back to bytes on failure
+    8. everything else   → str repr stored as bytes
+    """
+    if value is None:
+        return np.bytes_(b'')
+    if isinstance(value, dict):
+        return None                          # sentinel: caller must recurse
+    if isinstance(value, (bytes, np.bytes_)):
+        return np.bytes_(value)
+    if isinstance(value, str):
+        return np.bytes_(value.encode('utf-8'))
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, (int, float, np.integer, np.floating)):
+        return value
+    if isinstance(value, np.ndarray):
+        if value.ndim == 0:
+            # 0-d array — unwrap and recurse
+            return _to_h5_compatible(value.item())
+        if value.dtype == object:
+            # Object array — convert every element to str, store as bytes array
+            flat = [str(v).encode('utf-8') for v in value.ravel()]
+            return np.array(flat, dtype='S').reshape(value.shape)
+        if value.dtype.kind == 'U':
+            # Unicode string array — encode each element to bytes
+            flat = [s.encode('utf-8') for s in value.ravel()]
+            return np.array(flat, dtype='S').reshape(value.shape)
+        return value                         # numeric / bool ndarray — fine as-is
+    if isinstance(value, (list, tuple)):
+        try:
+            arr = np.array(value)
+            if arr.dtype == object:
+                raise ValueError('object array')
+            if arr.dtype.kind == 'U':
+                # List of strings resolved to a Unicode array — encode to bytes
+                flat = [s.encode('utf-8') for s in arr.ravel()]
+                return np.array(flat, dtype='S').reshape(arr.shape)
+            return arr
+        except (ValueError, TypeError):
+            return np.bytes_(str(value).encode('utf-8'))
+    # Fallback
+    return np.bytes_(str(value).encode('utf-8'))
 
-    LR      = ref['boundary'][:, 0]
-    UR      = ref['boundary'][:, 1]
-    nParams = len(LR)
 
-    conf = {
-        'UR':     UR,
-        'LR':     LR,
-        'op':     op,
-        'myfunc': myfunc,
-        'y_goal': ref,
-        'gLoop':  10,
-        'gL':    -12,
-        'gU':     12,
-        'gT':     abs(12 - (-12)) + 1,
-        'gTol':   0.01,
-    }
+def _save_dict_to_h5(h5file, data):
+    """
+    Recursively write a dict to an open h5py.File or h5py.Group.
 
-    # ------------------------------------------------------------------
-    N1 = 60    # population size
-    N2 = 100   # crossover pairs
-    N3 = 100   # mutation pairs
-    tg = 5     # total generations
+    Supports arbitrarily nested dicts whose leaf values are arrays,
+    strings, scalars, lists, or further dicts.
+    """
+    for key, value in data.items():
+        safe_key = str(key)          # h5py requires string keys
+        if isinstance(value, dict):
+            grp = h5file.require_group(safe_key)
+            _save_dict_to_h5(grp, value)
+        else:
+            converted = _to_h5_compatible(value)
+            if converted is None:
+                # _to_h5_compatible returns None only for dicts (shouldn't
+                # reach here, but handle defensively)
+                grp = h5file.require_group(safe_key)
+                _save_dict_to_h5(grp, value)
+            else:
+                h5file.create_dataset(safe_key, data=converted)
 
-    K          = []   # history: [average cost, best cost]
-    KP         = []   # history: best solution per generation
-    KS         = []   # history: best cost per generation
-    GA_counter = []
-    w          = 0    # generation index
-    j          = 1    # generation counter
 
+# ==========================================================================
+def ga_MEPmodel_pheno(subj, reRun=0):
+    root = os.getcwd()
+
+    # ----- model setting -----
+    ref = config_model_pheno(subj)
+
+    # ----- derive h5 result path (replace .mat extension if present) -----
+    resultname_h5 = os.path.splitext(ref['resultname'])[0] + '.h5'
+    result_path   = os.path.join(root, resultname_h5)
+
+    # ----- run GA or load fitted result -----
+    if os.path.isfile(result_path) and not reRun:
+        print(f'Use fitted result: \n{resultname_h5}')
+        with h5py.File(result_path, 'r') as f:
+            tmp = load_h5_to_dict(f)
+        p_post = tmp['p_post'].flatten()
+    else:
+        p_post = _run_and_save(ref, root, result_path)
+
+    # ----- show result -----
+    plotOn = 1
+    MEPmodel_pheno(p_post, ref, plotOn)
+
+
+# ==========================================================================
+def _run_and_save(ref, root, result_path):
+    """
+    Run the GA, save the result as an HDF5 file, and return the best
+    parameter set.
+
+    Parameters
+    ----------
+    ref         : dict   model configuration from config_model_pheno
+    root        : str    working directory
+    result_path : str    full path to the .h5 output file
+
+    Returns
+    -------
+    p_post : np.ndarray  [nParams,]
+    """
+    # ---- collect any previous solution to seed the population ----
+    nParams      = ref['boundary'].shape[0]
+    LR           = ref['boundary'][:, 0]
+    UR           = ref['boundary'][:, 1]
+    solution_ini = np.empty((0, nParams))
+
+    if os.path.isfile(result_path):
+        print(f'{result_path} found.')
+        with h5py.File(result_path, 'r') as f:
+            tmp = load_h5_to_dict(f)
+        solution_ini = np.atleast_2d(tmp['p_post'])
+        # rectify min/max
+        for i in range(nParams):
+            solution_ini[:, i] = np.clip(solution_ini[:, i], LR[i], UR[i])
+
+    # ---- set up online plot ----
     fig, axes = plt.subplots(5, 1, figsize=(8, 10))
     plt.ion()
     plt.show()
 
-    # ---- collect previous solutions ----
-    tmpname      = os.path.join(root, ref['resultname'])
-    solution_ini = np.empty((0, nParams))
-    if os.path.isfile(tmpname):
-        print(f'{tmpname} found.')
-        with h5py.File(tmpname, 'r') as f:
-            tmp = load_h5_to_dict(f)
-        solution_ini = np.atleast_2d(tmp['p_post'])
-
-    # rectify min/max
-    for i in range(nParams):
-        solution_ini[:, i] = np.clip(solution_ini[:, i], LR[i], UR[i])
-
-    # ----- initialization -----
-    print('======== Initialization ========')
-    P     = population(N1, nParams, LR, UR)
-    if solution_ini.size > 0:
-        P = np.vstack([P, solution_ini])
-    E, R, _  = evaluation(P, myfunc, ref)
-    P, E, R = selection_best(P, E, R, N1, op)
-    R1    = R[:, 0]
-    print('done')
-    print(f'Minimum cost: {E[0]}')
-    print('================================')
-    E_crit = E[0]
-
-    # ----- main loop -----
-    while True:
-        print('======= Gradient search ========')
-        Para_E_grd, E_grd, R_grd = gradient_search(P[0, :], R1, conf, E_crit)
-        if op * E_grd > op * E[0]:
-            P[0, :]  = Para_E_grd
-            E[0]     = E_grd
-            R[:, 0]  = R_grd
-        print('done')
-
-        print('======= single-parameter mutation ========')
-        P_ = mutation_single(P[0, :], LR, UR)
-        E_, R_ = evaluation(P_, myfunc, ref)
-        print('done')
-
-        print('======= Gradient search ========')
-        Para_E_grd_arr = np.zeros_like(P_)
-        E_grd_arr      = np.zeros(len(E_))
-        R_grd_arr      = np.zeros((R_.shape[0], len(E_)))
-        for i in range(len(E_)):
-            print(f'[{i+1}/{len(E_)}] cost: {E_[i]:.6f}')
-            Para_E_grd_arr[i, :], E_grd_arr[i], R_grd_arr[:, i] = gradient_search(
-                P_[i, :], R_[:, i], conf, E_crit
-            )
-        idx = op * E_grd_arr > op * E_
-        P_[idx, :]      = Para_E_grd_arr[idx, :]
-        E_[idx]         = E_grd_arr[idx]
-        R_[:, idx]      = R_grd_arr[:, idx]
-
-        P = np.vstack([P, P_])
-        E = np.concatenate([E, E_])
-        R = np.hstack([R, R_])
-        print('done')
-
-        _, E_show, _ = selection_best(P, E, R, 1, op)
-        print(f'best after gradient: {E_show}')
-
-        # GA
-        print('GA search...')
-        P_mutV  = mutationV(P[:N1, :], 0.1, 0.9, LR, UR)
-        P_cross = crossover(P, N2)
-        P_mut   = mutation(P, N3)
-        P_new   = np.vstack([P_mutV, P_cross, P_mut])
-
-        E_new, _, _ = evaluation(P_new, myfunc, ref)
-        P = np.vstack([P, P_new])
-        E = np.concatenate([E, E_new])
-
-        P, E = selection_uniq(P, E, N1, N1, op, LR, UR)
-        _, R1, _ = evaluation(P[[0], :], myfunc, ref)
-        R1 = R1[:, 0]
-        print('done')
-
-        avg_cost  = E.mean()
-        best_cost = E[0]
-        K.append([avg_cost, best_cost])
-        KP.append(P[0, :].copy())
-        KS.append(E[0])
-        E_crit = E[0]
-
-        print('========')
-        print(f'current best Loss: {KS[-1]}')
-        print('========')
-
-        gof = fitness_function(ref['y0'].ravel(order='F'), R1)
-        print('========')
-        print(f'current best R2: {gof}')
-        print('========')
-
-        if E_show > E[0]:
-            print('GA works')
-            GA_counter.append(1)
-        else:
-            print("GA doesn't work")
-            GA_counter.append(0)
-
-        w += 1
-        j += 1
-
-        # ----- online plot -----
-        _, houtput = myfunc(KP[-1], ref)
-        K_arr      = np.array(K)
-        GA_arr     = np.array(GA_counter)
+    # ---- GA run ----
+    # Pass a plot_callback so ga_run can update the figure each generation.
+    def plot_callback(KP, KS, K, E, GA_counter, R1):
+        K_arr  = np.array(K)
+        GA_arr = np.array(GA_counter)
+        _, houtput = objective_function(KP[-1], ref)
 
         for ax in axes:
             ax.cla()
@@ -234,60 +203,51 @@ def run_ga(ref):
         axes[2].set_title('parameter')
 
         axes[3].plot(ref['y0'].ravel(order='F'), 'k', linewidth=1.5)
-        axes[3].plot(houtput['sim']['simMEP2'].ravel(order='F'), 'r', linewidth=1.0)
+        axes[3].plot(
+            houtput['sim']['simMEP2'].ravel(order='F'), 'r', linewidth=1.0
+        )
         axes[3].set_title('target & best fit')
 
         axes[4].plot(GA_arr, 'b.')
         axes[4].set_xlabel('Generations')
         suc_rate = GA_arr.sum() / len(GA_arr) if len(GA_arr) else 0
-        axes[4].set_title(f'0--not work, 1--work, total success rate: {suc_rate:.2f}')
+        axes[4].set_title(
+            f'0--not work, 1--work, total success rate: {suc_rate:.2f}'
+        )
 
         plt.pause(0.01)
         fig.canvas.draw()
 
-        # stop: number of generations
-        if j > tg:
-            break
+    p_post, KP_arr, KS_arr, P = ga_run(
+        ref,
+        objective_function,
+        N1=60, N2=100, N3=100, tg=5,
+        op=-1,
+        solution_ini=solution_ini,
+        plot_callback=plot_callback,
+    )
 
-        # stop: good fit
-        if KS[-1] < 0.01:
-            break
-
-    # ----- get final result -----
-    KS_arr = np.array(KS)
-    KP_arr = np.array(KP)
-
-    if op == -1:
-        idx_best       = int(np.argmin(KS_arr))
-        find_parameter = KP_arr[idx_best, :]
-        print(f'minimum: {KS_arr[idx_best]}')
-    else:
-        idx_best       = int(np.argmax(KS_arr))
-        find_parameter = KP_arr[idx_best, :]
-        print(f'maximum: {KS_arr[idx_best]}')
-
-    # make a copy of previous fitted result
-    result_path = os.path.join(root, ref['resultname'])
+    # ---- backup previous result if it exists ----
     if os.path.isfile(result_path):
-        timestamp       = datetime.now().strftime('%Y-%m%d-%H%M')
-        backup_name     = ref['resultname'][:-4] + f'_backup-{timestamp}.mat'
-        backup_path     = os.path.join(root, backup_name)
+        timestamp   = datetime.now().strftime('%Y-%m%d-%H%M')
+        backup_path = os.path.splitext(result_path)[0] + f'_backup-{timestamp}.h5'
         shutil.copyfile(result_path, backup_path)
+        print(f'Previous result backed up to: {backup_path}')
 
-    # save fitted result
-    p_post = KP_arr[-1, :]
-    _, ref = MEPmodel_pheno(p_post, ref, 0)   # update ref
-
+    # ---- update ref and save to HDF5 ----
+    _, ref = MEPmodel_pheno(p_post, ref, 0)
     os.makedirs(os.path.dirname(result_path), exist_ok=True)
-    scipy.io.savemat(result_path, {
-        'p_post': p_post,
-        'KP':     KP_arr,
-        'ref':    ref,     
-        'P':      P,
-        'KS':     KS_arr,
-    })
+
+    with h5py.File(result_path, 'w') as f:
+        f.create_dataset('p_post', data=p_post)
+        f.create_dataset('KP',     data=KP_arr)
+        f.create_dataset('KS',     data=KS_arr)
+        f.create_dataset('P',      data=P)
+        grp = f.create_group('ref')
+        _save_dict_to_h5(grp, ref)
+
     print('fitted result saved:')
-    print(ref['resultname'])
+    print(result_path)
 
     return p_post
 

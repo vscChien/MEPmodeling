@@ -1,289 +1,292 @@
+"""
+Biological MEP model entry point.
+
+Example usage:
+    from ga_MEPmodel_bio import ga_MEPmodel_bio
+    ga_MEPmodel_bio(subj=1, withRC=1, AMPAweight=None, reRun=0)
+
+    subj        : subject number
+    withRC      : include recurrent connections (default 1)
+    AMPAweight  : fixed AMPA weight value, or None to fit freely
+    reRun       : 0 – load fitted result and plot simulated MEP
+                  1 – re-run model fitting (backs up previous fitted result)
+"""
+
 import os
+import sys
 import h5py
 import shutil
 import numpy as np
 from datetime import datetime
 import matplotlib.pyplot as plt
-from load_h5 import load_h5_to_dict
-from scipy.io import loadmat, savemat
-from MEPmodel_bio import MEPmodel_bio
-from config_model_bio import config_model_bio
-from GA.ga_toolbox.population        import population
-from GA.ga_toolbox.gradient_search   import gradient_search
-from GA.ga_toolbox.selection_best    import selection_best
-from GA.ga_toolbox.selection_uniq    import selection_uniq
-from GA.ga_toolbox.crossover         import crossover
-from GA.ga_toolbox.mutation          import mutation
-from GA.ga_toolbox.mutationV         import mutationV
-from GA.ga_toolbox.mutation_single   import mutation_single
-from GA.ga_toolbox.fitness_function  import fitness_function
-from GA.gradient_toolbox.evaluation  import evaluation
 
-def ga_MEPmodel_bio(subj, withRC=1, AMPAweight=None, reRun=0):
-    """
-    Main function for biological MEP model fitting using Genetic Algorithm.
-    """
-    # Get the directory of the current script
-    root = os.getcwd()
-    
-    # model setting
-    # Treat 'ref' as a dictionary with tuple keys for nested fields
-    ref = config_model_bio(subj, withRC, AMPAweight)
-    
-    result_file = os.path.join(root, ref['resultname'])
-    
-    # run GA or load existing results
-    if os.path.exists(result_file) and not reRun:
-        print(f"Use fitted result: \n{ref['resultname']}")
-        with h5py.File(result_file, 'r') as f:
-            tmp = load_h5_to_dict(f)
-        # Flattening to ensure it's a 1D array as expected in Python
-        p_post = tmp['p_post'].flatten()
-    else:
-        p_post = run_ga(ref)
- 
-    # show result
-    plotOn = 1
-    MEPmodel_bio(p_post, ref, plotOn)
+from load_h5            import load_h5_to_dict
+from MEPmodel_bio       import MEPmodel_bio
+from config_model_bio   import config_model_bio
+from Optimizer          import ga_run
 
+
+# ==========================================================================
 def objective_function(p, ref):
     """
-    Objective function for optimization mapping to the MATLAB subfunction.
+    Objective function: runs the biological MEP model and returns the residual.
     """
-    # MEPmodel_bio returns [sim, ref]
     _, ref_updated = MEPmodel_bio(p, ref)
     error = ref_updated['error']
     return error, ref_updated
 
-def run_ga(ref):
+
+# ==========================================================================
+def _to_h5_compatible(value):
     """
-    Genetic Algorithm implementation following the MATLAB run_ga subfunction.
+    Convert *value* to something h5py can write as a dataset.
+
+    Resolution order
+    ----------------
+    1. None              → store as empty bytes
+    2. dict              → signal caller to recurse (returns None sentinel)
+    3. str/bytes         → np.bytes_
+    4. bool              → int (must come before int check)
+    5. int / float       → as-is
+    6. np.ndarray
+       a. 0-d object     → unwrap and recurse
+       b. object dtype   → convert element-wise to str, store as bytes array
+       c. Unicode dtype  → encode each element to bytes
+       d. numeric/bool   → as-is
+    7. list / tuple      → convert to np.ndarray; fall back to bytes on failure
+    8. everything else   → str repr stored as bytes
     """
-    myfunc = objective_function
-    op = -1   # -1: find minimum, 1: find maximum
-    
-    # Access nested structures using tuples as keys
-    LR = ref[('model', 'boundary')][:, 0]
-    UR = ref[('model', 'boundary')][:, 1]
+    if value is None:
+        return np.bytes_(b'')
+    if isinstance(value, dict):
+        return None                          # sentinel: caller must recurse
+    if isinstance(value, (bytes, np.bytes_)):
+        return np.bytes_(value)
+    if isinstance(value, str):
+        return np.bytes_(value.encode('utf-8'))
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, (int, float, np.integer, np.floating)):
+        return value
+    if isinstance(value, np.ndarray):
+        if value.ndim == 0:
+            return _to_h5_compatible(value.item())
+        if value.dtype == object:
+            flat = [str(v).encode('utf-8') for v in value.ravel()]
+            return np.array(flat, dtype='S').reshape(value.shape)
+        if value.dtype.kind == 'U':
+            flat = [s.encode('utf-8') for s in value.ravel()]
+            return np.array(flat, dtype='S').reshape(value.shape)
+        return value
+    if isinstance(value, (list, tuple)):
+        try:
+            arr = np.array(value)
+            if arr.dtype == object:
+                raise ValueError('object array')
+            if arr.dtype.kind == 'U':
+                flat = [s.encode('utf-8') for s in arr.ravel()]
+                return np.array(flat, dtype='S').reshape(arr.shape)
+            return arr
+        except (ValueError, TypeError):
+            return np.bytes_(str(value).encode('utf-8'))
+    return np.bytes_(str(value).encode('utf-8'))
+
+
+def _save_dict_to_h5(h5file, data):
+    """
+    Recursively write a dict to an open h5py.File or h5py.Group.
+
+    Tuple keys (used for nested bio-model fields) are serialised as
+    their string representation so they round-trip safely.
+    """
+    for key, value in data.items():
+        safe_key = str(key)          # h5py requires string keys; tuple → "('a','b')"
+        if isinstance(value, dict):
+            grp = h5file.require_group(safe_key)
+            _save_dict_to_h5(grp, value)
+        else:
+            converted = _to_h5_compatible(value)
+            if converted is None:
+                grp = h5file.require_group(safe_key)
+                _save_dict_to_h5(grp, value)
+            else:
+                h5file.create_dataset(safe_key, data=converted)
+
+
+# ==========================================================================
+def ga_MEPmodel_bio(subj, withRC=1, AMPAweight=None, reRun=0):
+    """
+    Main entry point for biological MEP model fitting using a Genetic Algorithm.
+    """
+    root = os.getcwd()
+
+    # Normalise AMPAweight=[] (MATLAB empty) to None
+    if isinstance(AMPAweight, (list, np.ndarray)) and len(AMPAweight) == 0:
+        AMPAweight = None
+
+    # ----- model setting -----
+    ref = config_model_bio(subj, withRC, AMPAweight)
+
+    # ----- derive h5 result path (replace any existing extension) -----
+    resultname_h5 = os.path.splitext(ref['resultname'])[0] + '.h5'
+    result_path   = os.path.join(root, resultname_h5)
+
+    # ----- run GA or load fitted result -----
+    if os.path.isfile(result_path) and not reRun:
+        print(f'Use fitted result: \n{resultname_h5}')
+        with h5py.File(result_path, 'r') as f:
+            tmp = load_h5_to_dict(f)
+        p_post = tmp['p_post'].flatten()
+    else:
+        p_post = _run_and_save(ref, root, result_path)
+
+    # ----- show result -----
+    plotOn = 1
+    MEPmodel_bio(p_post, ref, plotOn)
+
+
+# ==========================================================================
+def _run_and_save(ref, root, result_path):
+    """
+    Run the GA, save the result as an HDF5 file, and return the best
+    parameter set.
+
+    Parameters
+    ----------
+    ref         : dict   model configuration from config_model_bio
+    root        : str    working directory
+    result_path : str    full path to the .h5 output file
+
+    Returns
+    -------
+    p_post : np.ndarray  [nParams,]
+    """
+    # Promote ref['model']['boundary'] to ref['boundary'] so that ga_run,
+    # which expects the pheno convention, can find it at the top level.
+    # The full ref['model'] sub-dict is left intact for MEPmodel_bio.
+    ref['boundary'] = ref['model']['boundary']
+
+    LR      = ref['boundary'][:, 0]
+    UR      = ref['boundary'][:, 1]
     nParams = len(LR)
 
-    # Optimization configuration dictionary
-    conf = {
-        'UR': UR,
-        'LR': LR,
-        'op': op,
-        'myfunc': myfunc,
-        'y_goal': ref,
-        'gLoop': 10,
-        'gL': -12,
-        'gU': 12,
-        'gT': abs(12 - (-12)) + 1,
-        'gTol': 0.01
-    }
-    
-    # GA parameters
-    N1 = 60   # population size
-    N2 = 100  # crossover pairs
-    N3 = 100  # mutation pairs
-    tg = 1    # total generations (matched to current script logic)
-
-    K = np.empty((0, 2))        # history of [average cost, best cost]
-    KP = np.empty((0, nParams)) # history of best solutions
-    KS = []                     # history of best costs
-    GA_counter = []
-    
-    w = 0 # 0-indexed counter for history
-    j = 1 # 1-indexed generation counter
-    
-    plt.figure(figsize=(8, 12))
-    
-    # Collect previous solutions from file
-    root = os.path.dirname(os.path.abspath(__file__))
-    tmpname = os.path.join(root, 'fitted_results', 'bio', f"result_bio_s{ref['subj']}.csv")
+    # ---- collect any previous solutions to seed the population ----
     solution_ini = np.empty((0, nParams))
-    
-    if os.path.exists(tmpname):
-        print(f"{tmpname} found.")
-        tmp = loadmat(tmpname)
-        if 'p_post' in tmp:
-            solution_ini = np.vstack([solution_ini, tmp['p_post'].flatten()])
-    
-    # Check fixed AMPA weight results
+
+    # Primary result file
+    if os.path.isfile(result_path):
+        print(f'{result_path} found.')
+        with h5py.File(result_path, 'r') as f:
+            tmp = load_h5_to_dict(f)
+        solution_ini = np.vstack([solution_ini, np.atleast_2d(tmp['p_post'])])
+
+    # Fixed-AMPAweight result files (h5 versions)
+    fixed_dir = os.path.join(root, 'fitted_results', 'bio', 'fixed_AMPAweight')
     for AMPAw in np.arange(0.2, 0.9, 0.1):
-        # Format float to match MATLAB's %g
-        tmpname_fixed = os.path.join(root, 'fitted_results', 'bio', 'fixed_AMPAweight', 
-                                     f"result_bio_s{ref['subj']}[{AMPAw:g}].csv")
-        if os.path.exists(tmpname_fixed):
-            print(f"{tmpname_fixed} found.")
-            tmp_fixed = loadmat(tmpname_fixed)
+        tmpname_fixed = os.path.join(
+            fixed_dir, f"result_bio_s{ref['subj']}[{AMPAw:g}].h5"
+        )
+        if os.path.isfile(tmpname_fixed):
+            print(f'{tmpname_fixed} found.')
+            with h5py.File(tmpname_fixed, 'r') as f:
+                tmp_fixed = load_h5_to_dict(f)
             if 'p_post' in tmp_fixed:
-                p_tmp = tmp_fixed['p_post'].flatten()
-                if ref[('model', 'AMPAweight')] is not None:
-                    # Index 12 (MATLAB) -> Index 11 (Python)
-                    p_tmp[11] = ref[('model', 'AMPAweight')]
+                p_tmp = np.atleast_1d(tmp_fixed['p_post']).ravel()
+                ampa = ref['model'].get('AMPAweight')
+                if ampa is not None and ampa != []:
+                    p_tmp[11] = ampa
                 solution_ini = np.vstack([solution_ini, p_tmp])
-    
-    # Rectify boundaries for initial solutions
+
+    # Rectify boundaries for seeded solutions
     if solution_ini.size > 0:
         for i in range(nParams):
             solution_ini[:, i] = np.clip(solution_ini[:, i], LR[i], UR[i])
 
-    # --- Initialization ---
-    print('======== Initialization ========')
-    P = population(N1, nParams, LR, UR)
-    if solution_ini.size > 0:
-        P = np.vstack([P, solution_ini])
-        
-    E, R_pop = evaluation(P, myfunc, ref)
-    P, E, R_pop = selection_best(P, E, R_pop, N1, op)
-    R1 = R_pop[:, 0] # Best residual
-    
-    print('done')
-    print(f"Minimum cost: {E[0]}")
-    print('================================')
-    E_crit = E[0]
-    
-    # --- Main GA loop ---
-    while True:
-        print('======= Gradient search ========')
-        Para_E_grd, E_grd, R_grd = gradient_search(P[0, :], R1, conf, E_crit)
-        
-        if op * E_grd > op * E[0]:
-            P[0, :] = Para_E_grd
-            E[0] = E_grd
-            R_pop[:, 0] = R_grd
-        print('done')
-              
-        print('======= single-parameter mutation ========')
-        P_mut_s = mutation_single(P[0, :], LR, UR)
-        E_mut_s, R_mut_s = evaluation(P_mut_s, myfunc, ref)
-        print('done')
-        
-        print('======= Gradient search (post-mutation) ========')
-        n_mut = len(E_mut_s)
-        Para_E_grd_all = np.zeros_like(P_mut_s)
-        E_grd_all = np.zeros(n_mut)
-        R_grd_all = np.zeros_like(R_mut_s)
-        
-        for i in range(n_mut):
-            print(f"[{i+1}/{n_mut}] cost: {E_mut_s[i]}")
-            p_g, e_g, r_g = gradient_search(P_mut_s[i, :], R_mut_s[:, i], conf, E_crit)
-            Para_E_grd_all[i, :] = p_g
-            E_grd_all[i] = e_g
-            R_grd_all[:, i] = r_g
-            
-        replace_idx = (op * E_grd_all) > (op * E_mut_s)
-        P_mut_s[replace_idx, :] = Para_E_grd_all[replace_idx, :]
-        E_mut_s[replace_idx] = E_grd_all[replace_idx]
-        R_mut_s[:, replace_idx] = R_grd_all[:, replace_idx]
-        
-        P = np.vstack([P, P_mut_s])
-        E = np.concatenate([E, E_mut_s])
-        R_pop = np.hstack([R_pop, R_mut_s])
-        print('done')
-                           
-        # Check current best before GA search
-        _, E_show_arr, _ = selection_best(P, E, R_pop, 1, op)
-        E_show = E_show_arr[0]
-        print(f"best after gradient: {E_show}")
-        
-        # --- GA Search ---
-        print('GA search...')
-        P_mutV = mutationV(P[:N1, :], 0.1, 0.9, LR, UR)
-        P_cross = crossover(P, N2)
-        P_mut_ga = mutation(P, N3)
-        
-        P_offspring = np.vstack([P_mutV, P_cross, P_mut_ga])
-        E_offspring, _, _ = evaluation(P_offspring, myfunc, ref)
-        
-        P = np.vstack([P, P_offspring])
-        E = np.concatenate([E, E_offspring])
-        P, E = selection_uniq(P, E, N1, N1, op, LR, UR)
-        
-        _, R1, _ = evaluation(P[0, :], myfunc, ref)
-        print('done')
-               
-        # Statistics
-        K = np.vstack([K, [np.mean(E), E[0]]])
-        KP = np.vstack([KP, P[0, :]])
-        KS.append(E[0])
-        E_crit = E[0]
-        
-        print(f"========\ncurrent best Loss: {KS[-1]}\n========")
-        # Match MATLAB flattening for R^2 calculation
-        gof = fitness_function(ref['y0'].flatten(order='F'), R1)
-        print(f"current best R2: {gof}\n========")
-        
-        GA_counter.append(1 if E_show > E[0] else 0)
-                        
-        w += 1 
-        j += 1 
-        
-        # --- Online Visualization ---
-        _, houtput = myfunc(KP[-1, :], ref)
-        plt.clf()
+    # ---- set up online plot ----
+    fig, axes = plt.subplots(5, 1, figsize=(8, 12))
+    plt.ion()
+    plt.show()
 
-        plt.subplot(5, 1, 1)
-        plt.plot(K[:, 1], 'b.', label='Best')
-        plt.plot(K[:, 0], 'r.', label='Average')
-        plt.title('Blue - Best            Red - Average')
-        plt.ylabel('Loss function')
-        plt.grid(True); plt.yscale('log')
+    # ---- GA run ----
+    def plot_callback(KP, KS, K, E, GA_counter, R1):
+        K_arr  = np.array(K)
+        GA_arr = np.array(GA_counter)
+        _, houtput = objective_function(KP[-1], ref)
 
-        plt.subplot(5, 1, 2)
-        plt.plot(E, 'b.')
-        plt.xlabel('Chromosomes'); plt.ylabel('Loss function')
-        plt.grid(True); plt.yscale('log')
+        for ax in axes:
+            ax.cla()
 
-        plt.subplot(5, 1, 3)
-        plt.plot(KP[-1, :], '-ko')
-        plt.title('parameter')
+        axes[0].plot(K_arr[:, 1], 'b.')
+        axes[0].plot(K_arr[:, 0], 'r.')
+        axes[0].set_title('Blue - Best            Red - Average')
+        axes[0].set_xlabel('Generation')
+        axes[0].set_ylabel('Loss function')
+        axes[0].set_yscale('log')
+        axes[0].grid(True)
 
-        plt.subplot(5, 1, 4)
-        plt.plot(ref['y0'].flatten(order='F'), 'k', linewidth=1.5, label='Target')
-        plt.plot(houtput[('sim', 'simMEP2')].flatten(order='F'), 'r', linewidth=1, label='Best fit')
-        plt.title('target & best fit')
-   
-        plt.subplot(5, 1, 5)
-        plt.plot(GA_counter, 'b.')
-        plt.xlabel('Generations')
-        if GA_counter:
-            rate = sum(GA_counter) / len(GA_counter)
-            plt.title(f"0--not work, 1--work, total successful rate: {rate:.4f}")
-        
-        plt.draw()
+        axes[1].plot(E, 'b.')
+        axes[1].set_xlabel('Chromosomes')
+        axes[1].set_ylabel('Loss function')
+        axes[1].set_yscale('log')
+        axes[1].grid(True)
+
+        axes[2].plot(KP[-1], '-ko')
+        axes[2].set_title('parameter')
+
+        axes[3].plot(ref['y0'].flatten(order='F'), 'k', linewidth=1.5)
+        axes[3].plot(
+            houtput['sim']['simMEP2'].flatten(order='F'), 'r', linewidth=1.0
+        )
+        axes[3].set_title('target & best fit')
+
+        axes[4].plot(GA_arr, 'b.')
+        axes[4].set_xlabel('Generations')
+        suc_rate = GA_arr.sum() / len(GA_arr) if len(GA_arr) else 0
+        axes[4].set_title(
+            f'0--not work, 1--work, total success rate: {suc_rate:.2f}'
+        )
+
         plt.pause(0.01)
-                
-        # --- Termination ---
-        if j > tg or KS[-1] < 0.01:
-            break
-                
-    # --- Finalization ---
-    if op == -1:
-        idx = np.argmin(KS)
-    else:
-        idx = np.argmax(KS)
-    find_parameter = KP[idx, :]
-     
-    # Backup existing result
-    result_path = os.path.join(root, ref['resultname'])
-    if os.path.exists(result_path):
-        date_tag = datetime.now().strftime('%Y-%m%d-%H%M')
-        backup_name = f"{ref['resultname'][:-4]}_backup-{date_tag}.csv"
-        shutil.copy2(result_path, os.path.join(root, backup_name))
-    
-    # Save final results
-    p_post = KP[-1, :]
+        fig.canvas.draw()
+
+    p_post, KP_arr, KS_arr, P = ga_run(
+        ref,
+        objective_function,
+        N1=60, N2=100, N3=100, tg=1,
+        op=-1,
+        solution_ini=solution_ini,
+        plot_callback=plot_callback,
+    )
+
+    # ---- backup previous result if it exists ----
+    if os.path.isfile(result_path):
+        timestamp   = datetime.now().strftime('%Y-%m%d-%H%M')
+        backup_path = os.path.splitext(result_path)[0] + f'_backup-{timestamp}.h5'
+        shutil.copyfile(result_path, backup_path)
+        print(f'Previous result backed up to: {backup_path}')
+
+    # ---- update ref and save to HDF5 ----
     _, ref_final = MEPmodel_bio(p_post, ref, 0)
-    
-    data_to_save = {
-        'p_post': p_post,
-        'KP': KP,
-        'ref': ref_final,
-        'P': P,
-        'KS': np.array(KS)
-    }
-    savemat(result_path, data_to_save)
-    print(f"fitted result saved: \n{ref_final['resultname']}")
+    os.makedirs(os.path.dirname(result_path), exist_ok=True)
+
+    with h5py.File(result_path, 'w') as f:
+        f.create_dataset('p_post', data=p_post)
+        f.create_dataset('KP',     data=KP_arr)
+        f.create_dataset('KS',     data=KS_arr)
+        f.create_dataset('P',      data=P)
+        grp = f.create_group('ref')
+        _save_dict_to_h5(grp, ref_final)
+
+    print('fitted result saved:')
+    print(result_path)
 
     return p_post
+
+
+# ==========================================================================
+if __name__ == '__main__':
+    subj       = int(sys.argv[1])   if len(sys.argv) > 1 else 1
+    withRC     = int(sys.argv[2])   if len(sys.argv) > 2 else 1
+    AMPAweight = float(sys.argv[3]) if len(sys.argv) > 3 else None
+    reRun      = int(sys.argv[4])   if len(sys.argv) > 4 else 0
+    ga_MEPmodel_bio(subj, withRC, AMPAweight, reRun)
