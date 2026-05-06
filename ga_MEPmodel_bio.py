@@ -120,10 +120,6 @@ def ga_MEPmodel_bio(subj, withRC=1, AMPAweight=None, reRun=0):
     """
     root = os.getcwd()
 
-    # Normalise AMPAweight=[] (MATLAB empty) to None
-    if isinstance(AMPAweight, (list, np.ndarray)) and len(AMPAweight) == 0:
-        AMPAweight = None
-
     # ----- model setting -----
     ref = config_model_bio(subj, withRC, AMPAweight)
 
@@ -193,8 +189,10 @@ def _run_and_save(ref, root, result_path):
             if 'p_post' in tmp_fixed:
                 p_tmp = np.atleast_1d(tmp_fixed['p_post']).ravel()
                 ampa = ref['model'].get('AMPAweight')
-                if ampa is not None and ampa != []:
-                    p_tmp[11] = ampa
+                if ampa is not None and len(np.atleast_1d(ampa)) > 0:
+                    # Pin the AMPAweight parameter to the fixed value(s)
+                    ampa_arr = np.atleast_1d(ampa)
+                    p_tmp[11] = ampa_arr[-1]
                 solution_ini = np.vstack([solution_ini, p_tmp])
 
     # Rectify boundaries for seeded solutions

@@ -100,8 +100,8 @@ def config_model_bio(subj, withRC, AMPAweight=[]):
         boundary[4, :] = np.array([0, 10]) # R5
         boundary[5, :] = np.array([5, 10]) # Tmuap
         boundary[6, :] = np.array([0, 1]) # AMPAweight
-        if AMPAweight:
-            boundary[6, :] = np.array([1, 1]) * AMPAweight # fixed value
+        if AMPAweight is not None and len(np.atleast_1d(AMPAweight)) > 0:
+            boundary[6, :] = np.array([1, 1]) * np.atleast_1d(AMPAweight) # fixed value
         model["boundarytext"] = ['R1','R2','R3','R4','R5','MU.T','AMPAw']
     else:
         nParams = 12
@@ -118,18 +118,21 @@ def config_model_bio(subj, withRC, AMPAweight=[]):
         boundary[9, :] = np.array([1, 10]) # RC.th
         boundary[10, :] = np.array([5, 10]) # Tmuap
         boundary[11, :] = np.array([0, 1]) # AMPAweight
-        if AMPAweight:
-            boundary[11, :] = np.array([1, 1]) * AMPAweight # fixed value
+        if AMPAweight is not None and len(np.atleast_1d(AMPAweight)) > 0:
+            boundary[11, :] = np.array([1, 1]) * np.atleast_1d(AMPAweight) # fixed value
         model["boundarytext"] = ['R1','R2','R3','R4','R5','E1','E2','I1','I2','RC.th','MU.T','AMPAw']
 
     model["boundary"] = boundary
     ref["model"] = model
 
     if withRC == 1:
-        if not AMPAweight == None:
+        if AMPAweight is None or len(np.atleast_1d(AMPAweight)) == 0:
+            # Free fit — no fixed AMPAweight
             ref["resultname"] = os.path.join("fitted_results", "bio", f"result_bio_s{subj}.h5")
         else:
-            ref["resultname"] = os.path.join("fitted_results", "bio", "fixed_AMPAweight", f"result_bio_s{subj}.h5")
+            # Fixed AMPAweight provided — encode each value in the filename
+            ampa_tag = '_'.join(f'{v:g}' for v in np.atleast_1d(AMPAweight))
+            ref["resultname"] = os.path.join("fitted_results", "bio", "fixed_AMPAweight", f"result_bio_s{subj}[{ampa_tag}].h5")
     else:
             ref["resultname"] = os.path.join("fitted_results", "bioNoRC", f"result_bioNoRC_s{subj}.h5")
     ref["figname"] = ref["resultname"][:-3]+".svg"
