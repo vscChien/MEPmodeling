@@ -406,8 +406,8 @@ def ga_evaluation(X, objective_function, reference):
         errors[:, j] = error_flat
         fits[j]      = fit
         Houtput[j]   = houtput
-        print(f'    eval [{j+1:3d}/{n_pop}]  fit = {fit:.6g}  ({elapsed:.2f}s)',
-              flush=True)
+        # print(f'    eval [{j+1:3d}/{n_pop}]  fit = {fit:.6g}  ({elapsed:.2f}s)',
+        #       flush=True)
 
     return fits, errors, Houtput
 
