@@ -130,7 +130,7 @@
 # load_MEP(subj, intensity_idx, [20, 50], 1)
 #############################################################
 # from ga_MEPmodel_bio import ga_MEPmodel_bio
-# ga_MEPmodel_bio(1,1,[],0)
+# ga_MEPmodel_bio(6,1,[0.5],0)
 # from gen_DIwave import gen_DIwave
 # from deconv_DIwave4 import deconv_DIwave
 # import numpy as np
@@ -201,4 +201,5 @@
 
 
 from ga_MEPmodel_pheno import ga_MEPmodel_pheno
-ga_MEPmodel_pheno(1,0)
+for i in range(1,11):
+    ga_MEPmodel_pheno(i,0)
