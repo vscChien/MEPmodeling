@@ -176,11 +176,18 @@ def _run_and_save(ref, root, result_path):
             tmp = load_h5_to_dict(f)
         solution_ini = np.vstack([solution_ini, np.atleast_2d(tmp['p_post'])])
 
-    # Fixed-AMPAweight result files (h5 versions)
-    fixed_dir = os.path.join(root, 'fitted_results', 'bio', 'fixed_AMPAweight')
-    for AMPAw in np.arange(0.2, 0.9, 0.1):
+    # Fixed-AMPAweight result file — only loaded when AMPAweight is a 1-value list
+    ampa = ref['model'].get('AMPAweight')
+    ampa_arr = np.atleast_1d(ampa) if (ampa is not None and ampa != []) else np.array([])
+    if len(ampa_arr) == 1 and ref['model'].get('withRC'):
+        fixed_dir     = os.path.join(root, 'fitted_results', 'bio', 'fixedAMPA_weight')
         tmpname_fixed = os.path.join(
-            fixed_dir, f"result_bio_s{ref['subj']}[{AMPAw:g}].h5"
+            fixed_dir, f"result_bio_s{ref['subj']}[{ampa_arr[0]:g}].h5"
+        )
+    elif len(ampa_arr) == 1 and ref['model'].get('withRC') == 0:
+        fixed_dir     = os.path.join(root, 'fitted_results', 'bioNoRC', 'fixedAMPA_weight')
+        tmpname_fixed = os.path.join(
+            fixed_dir, f"result_bio_s{ref['subj']}[{ampa_arr[0]:g}].h5"
         )
         if os.path.isfile(tmpname_fixed):
             print(f'{tmpname_fixed} found.')
@@ -188,12 +195,10 @@ def _run_and_save(ref, root, result_path):
                 tmp_fixed = load_h5_to_dict(f)
             if 'p_post' in tmp_fixed:
                 p_tmp = np.atleast_1d(tmp_fixed['p_post']).ravel()
-                ampa = ref['model'].get('AMPAweight')
-                if ampa is not None and len(np.atleast_1d(ampa)) > 0:
-                    # Pin the AMPAweight parameter to the fixed value(s)
-                    ampa_arr = np.atleast_1d(ampa)
-                    p_tmp[11] = ampa_arr[-1]
+                p_tmp[11] = ampa_arr[0]   # ensure the parameter matches the requested value
                 solution_ini = np.vstack([solution_ini, p_tmp])
+        else:
+            print(f'No fixed-AMPAweight seed file found at:\n  {tmpname_fixed}')
 
     # Rectify boundaries for seeded solutions
     if solution_ini.size > 0:
