@@ -37,7 +37,7 @@ def plot_param_panel(p, ref):
             locP = 0.5 * rescale
         
         plt.scatter([1], [locP], color='C0', zorder=5) # "filled" scatter
-        plt.text(1.01, locP-0.05, f"{p[i]:.2f}")
+        plt.text(1.02, locP-0.04, f"{p[i]:.2f}")
         
         if boundary is not None:
             plt.scatter([1, 1], [0, rescale], marker='_', color='black')
