@@ -188,16 +188,72 @@ def get_iocurve(simMEP, ref):
         simIO[i, 0] = ref["intensities"][i]
         simIO[i, 1] = peakv1 - peakv2
 
-    if ref["subj"] in {1, 2, 3, 4, 9, 10}:
-        p0 = [40, 1.4, 10]
-    elif ref["subj"] in {5, 7, 8}:
-        p0 = [50, 1.4, 5]
-    elif ref["subj"] == 6:
-        p0 = [60, 1.4, 2]
-    else:
-        p0 = [40, 1.4, 10]  # default fallback
-
-    popt1, _ = curve_fit(sigmoid, IO[:, 0], IO[:, 1], p0=p0)
-    popt2, _ = curve_fit(sigmoid, simIO[:, 0], simIO[:, 1], p0=p0)
+    popt1 = _fit_sigmoid(IO[:, 0],    IO[:, 1])
+    popt2 = _fit_sigmoid(simIO[:, 0], simIO[:, 1])
 
     return IO, simIO, popt1, popt2
+
+
+def _fit_sigmoid(x, y):
+    """
+    Fit sigmoid(x, x0, r, a) = a / (1 + exp(r*(x0 - x))) to (x, y) data.
+
+    Uses data-driven initial guesses and tries multiple candidates so that
+    shallow or late-rising IO curves (e.g. subject 6) converge reliably.
+
+    Parameters
+    ----------
+    x : np.ndarray  stimulus intensities
+    y : np.ndarray  MEP amplitudes
+
+    Returns
+    -------
+    popt : np.ndarray  [x0, r, a]
+    """
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+
+    # Data-driven estimates
+    # a: plateau is at least 2x the observed max (curve may not have plateaued)
+    a_est  = float(y.max()) * 2.0
+    # r: approximate slope; use a small safe default
+    r_est  = 0.2
+    # x0: inflection point — start beyond the data range if y is still rising
+    x0_est = float(x[-1]) + (float(x[-1]) - float(x[0])) * 0.5
+
+    # p0 candidates in order of preference: (x0, r, a)
+    candidates = [
+        [x0_est,              r_est, a_est],
+        [x0_est,              0.3,   a_est],
+        [x0_est,              0.1,   a_est],
+        [float(x[-1]),        r_est, a_est],
+        [float(x[-1]) + 10,   r_est, a_est],
+        [float(x[-1]) + 20,   0.3,   a_est],
+        [float(x.mean()),     r_est, a_est],
+    ]
+
+    # x0 can extend well beyond the data range for late-rising curves;
+    # r must stay positive; a must be positive
+    x_range = float(x[-1]) - float(x[0])
+    bounds = (
+        [float(x[0]),                    1e-4,  0.0   ],
+        [float(x[-1]) + 3 * x_range,    10.0,  np.inf],
+    )
+
+    for p0 in candidates:
+        try:
+            popt, _ = curve_fit(
+                sigmoid, x, y,
+                p0=p0, bounds=bounds,
+                maxfev=20000,
+            )
+            return popt
+        except (RuntimeError, ValueError):
+            continue
+
+    raise RuntimeError(
+        f"sigmoid curve_fit failed for all initial guesses.\n"
+        f"  x = {x}\n"
+        f"  y = {y}\n"
+        "  Consider checking the data or extending the candidate p0 list."
+    )
