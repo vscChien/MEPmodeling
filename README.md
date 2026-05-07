@@ -70,7 +70,8 @@ subj       = 1;  % subject 1–10
 withRC     = 0;  % 0: biological model without RC 
                  % 1: biological model with RC
 AMPAweight = []; % []:free parameter range [0,1]
-                 %    or a fixed value within [0,1]               
+                 %    or a fixed value within [0,1]
+                 % With no Renshaw cells only a free parameter range works               
 reRun      = 0;  % 0: Load fitted result and plot simulated MEP.  
                  % 1: Rerun model fitting. Back up previous fitted result
 ga_MEPmodel_bio(subj,withRC,AMPAweight,reRun);
@@ -93,3 +94,8 @@ ga_MEPmodel_pheno(subj,reRun);
     <img src="scripts/figures/demo_s1_pheno_panel.png" alt="Click to view PDF" width="800">
   </a>
 </p>
+
+## ⚠️ Known issues
+- Though AMPAweight is a list, it can only contain 1 value.
+- No optimization occures when AMPAweight is a fixed value.
+- The biological model without Renshaw cells does not implement simulations with fixed AMPAweight correctly.
