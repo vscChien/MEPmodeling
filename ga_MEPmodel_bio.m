@@ -14,7 +14,7 @@
 
 function ga_MEPmodel_bio(subj,withRC,AMPAweight,reRun)
 
-    root=fileparts(mfilename("fullpath"));
+    root=fileparts(mfilename('fullpath'));
     addpath(fullfile(root,'GA','ga_toolbox'))
     addpath(fullfile(root,'GA','gradient_toolbox'))
     
@@ -92,22 +92,27 @@ function p_post = run_ga(ref)
     
     figure;
     %%%%%%%%%%collect previous solutions%%%%%%%%%%%%%
-    root=fileparts(mfilename("fullpath"));
+    root=fileparts(mfilename('fullpath'));
     tmpname=fullfile(root,ref.resultname);
     if contains(tmpname,'bioNoRC')
        solution_ini=[0,0,0,0,0,5,0];
     else
         solution_ini=[0,0,0,0,0,0,0,0,0,1,5,0];
     end
-    if exist(tmpname,"file")
+    if contains(tmpname,'fixed_AMPAweight')
+        s=split(tmpname,'fixed_AMPAweight/');
+        s2=split(s(2),'[');
+        tmpname=char(strcat(s(1),s2(1),'.mat'));
+    end
+    if exist(tmpname,'file')
         disp([tmpname ' found.'])
         tmp = load(tmpname);
         solution_ini = tmp.p_post;       
     end
-    if ~contains(tmpname,"bioNoRC")
+    if ~contains(tmpname,'bioNoRC')
         for AMPAw=0.2:0.1:0.8
             tmpname=fullfile(root,'fitted_results','bio','fixed_AMPAweight',sprintf('result_bio_s%d[%g].mat',ref.subj,AMPAw));
-            if exist(tmpname,"file")
+            if exist(tmpname,'file')
                 disp([tmpname ' found.'])
                 tmp = load(tmpname);
                 if ~isempty(ref.model.AMPAweight)
