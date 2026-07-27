@@ -94,7 +94,7 @@ function p_post = run_ga(ref)
     %%%%%%%%%%collect previous solutions%%%%%%%%%%%%%
     root=fileparts(mfilename("fullpath"));
     tmpname=fullfile(root,'fitted_results','bio',sprintf('result_bio_s%d.mat',ref.subj));
-    solution_ini=[];
+    solution_ini=[0,0,0,0,0,0,0,0,0,1,5,0];
     if exist(tmpname,"file")
         disp([tmpname ' found.'])
         tmp = load(tmpname);

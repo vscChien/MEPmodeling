@@ -81,7 +81,7 @@ function p_post = run_ga(ref)
     %%%%%%%%%%collect previous solutions%%%%%%%%%%%%%
     root=fileparts(mfilename("fullpath"));
     tmpname=fullfile(root,ref.resultname);
-    solution_ini=[];
+    solution_ini=[0.1,0.1,0,4,4,4,4,4,4,4,4,4,4];
     if exist(tmpname,"file")
         disp([tmpname ' found.'])
         tmp = load(tmpname);
