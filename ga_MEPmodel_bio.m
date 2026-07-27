@@ -93,22 +93,28 @@ function p_post = run_ga(ref)
     figure;
     %%%%%%%%%%collect previous solutions%%%%%%%%%%%%%
     root=fileparts(mfilename("fullpath"));
-    tmpname=fullfile(root,'fitted_results','bio',sprintf('result_bio_s%d.mat',ref.subj));
-    solution_ini=[0,0,0,0,0,0,0,0,0,1,5,0];
+    tmpname=fullfile(root,ref.resultname);
+    if contains(tmpname,'bioNoRC')
+       solution_ini=[0,0,0,0,0,5,0];
+    else
+        solution_ini=[0,0,0,0,0,0,0,0,0,1,5,0];
+    end
     if exist(tmpname,"file")
         disp([tmpname ' found.'])
         tmp = load(tmpname);
         solution_ini = tmp.p_post;       
     end
-    for AMPAw=0.2:0.1:0.8
-        tmpname=fullfile(root,'fitted_results','bio','fixed_AMPAweight',sprintf('result_bio_s%d[%g].mat',ref.subj,AMPAw));
-        if exist(tmpname,"file")
-            disp([tmpname ' found.'])
-            tmp = load(tmpname);
-            if ~isempty(ref.model.AMPAweight)
-                tmp.p_post(12)=ref.model.AMPAweight; % fix ampa weight
+    if ~contains(tmpname,"bioNoRC")
+        for AMPAw=0.2:0.1:0.8
+            tmpname=fullfile(root,'fitted_results','bio','fixed_AMPAweight',sprintf('result_bio_s%d[%g].mat',ref.subj,AMPAw));
+            if exist(tmpname,"file")
+                disp([tmpname ' found.'])
+                tmp = load(tmpname);
+                if ~isempty(ref.model.AMPAweight)
+                    tmp.p_post(12)=ref.model.AMPAweight; % fix ampa weight
+                end
+                solution_ini = [solution_ini; tmp.p_post];  
             end
-            solution_ini = [solution_ini; tmp.p_post];  
         end
     end
     % rectify min max
