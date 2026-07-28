@@ -2,7 +2,7 @@ parentDir = fileparts(pwd);
 addpath(parentDir);
 
 %---------fig_result_summary.png----------
-score=zeros(10,3); %[Pheno,Bio,BioNoRC];
+score=zeros(10,3); %[Pheno,Bio,BioNoRC]; % gof of MEP waveforms
 score2=zeros(10,3); %[Pheno,Bio,BioNoRC]; % gof of IO curve
 for subj=1:10
  disp(subj)
