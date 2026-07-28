@@ -14,7 +14,7 @@
 
 function ga_MEPmodel_bio(subj,withRC,AMPAweight,reRun)
 
-    root=fileparts(mfilename("fullpath"));
+    root=fileparts(mfilename('fullpath'));
     addpath(fullfile(root,'GA','ga_toolbox'))
     addpath(fullfile(root,'GA','gradient_toolbox'))
     
@@ -92,23 +92,34 @@ function p_post = run_ga(ref)
     
     figure;
     %%%%%%%%%%collect previous solutions%%%%%%%%%%%%%
-    root=fileparts(mfilename("fullpath"));
-    tmpname=fullfile(root,'fitted_results','bio',sprintf('result_bio_s%d.mat',ref.subj));
-    solution_ini=[];
-    if exist(tmpname,"file")
+    root=fileparts(mfilename('fullpath'));
+    tmpname=fullfile(root,ref.resultname);
+    if contains(tmpname,'bioNoRC')
+       solution_ini=[0,0,0,0,0,5,0];
+    else
+        solution_ini=[0,0,0,0,0,0,0,0,0,1,5,0];
+    end
+    if contains(tmpname,'fixed_AMPAweight')
+        s=split(tmpname,'fixed_AMPAweight/');
+        s2=split(s(2),'[');
+        tmpname=char(strcat(s(1),s2(1),'.mat'));
+    end
+    if exist(tmpname,'file')
         disp([tmpname ' found.'])
         tmp = load(tmpname);
         solution_ini = tmp.p_post;       
     end
-    for AMPAw=0.2:0.1:0.8
-        tmpname=fullfile(root,'fitted_results','bio','fixed_AMPAweight',sprintf('result_bio_s%d[%g].mat',ref.subj,AMPAw));
-        if exist(tmpname,"file")
-            disp([tmpname ' found.'])
-            tmp = load(tmpname);
-            if ~isempty(ref.model.AMPAweight)
-                tmp.p_post(12)=ref.model.AMPAweight; % fix ampa weight
+    if ~contains(tmpname,'bioNoRC')
+        for AMPAw=0.2:0.1:0.8
+            tmpname=fullfile(root,'fitted_results','bio','fixed_AMPAweight',sprintf('result_bio_s%d[%g].mat',ref.subj,AMPAw));
+            if exist(tmpname,'file')
+                disp([tmpname ' found.'])
+                tmp = load(tmpname);
+                if ~isempty(ref.model.AMPAweight)
+                    tmp.p_post(12)=ref.model.AMPAweight; % fix ampa weight
+                end
+                solution_ini = [solution_ini; tmp.p_post];  
             end
-            solution_ini = [solution_ini; tmp.p_post];  
         end
     end
     % rectify min max
