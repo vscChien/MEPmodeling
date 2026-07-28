@@ -1,6 +1,6 @@
 ## Optimizer
 
-This repository contains a hybrid optimization algorithm that combines a genetic algorithm (GA) with local gradient-based search to fit a model's parameters to a target dataset. The main entry point of the optimization pipeline is optimizer.py. The algorithm is adapted from the previous work of Dr. Peng Wang [1,2] and his colleague, Dr. Vincent Chien [2]. The Python implementation can be found in https://github.com/EleBern/Optimizer.
+This repository contains a hybrid optimization algorithm that combines a genetic algorithm (GA) with local gradient-based search to fit a model's parameters to a target dataset. The algorithm is adapted from the previous work of Dr. Peng Wang [1,2] and his colleague, Dr. Vincent Chien [2]. The Python implementation can be found in https://github.com/EleBern/Optimizer.
 
 [1] Wang, P., Kong, R., Kong, X., Liégeois, R., Orban, C., Deco, G., ... & Thomas Yeo, B. T. (2019). Inversion of a large-scale circuit model reveals a cortical hierarchy in the dynamic resting human brain. Science advances, 5(1), eaat7854.
 
