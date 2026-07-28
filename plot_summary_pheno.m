@@ -33,7 +33,7 @@ function plot_summary_pheno(p,ref)
 
     % IO curve
     nexttile(2);
-    [IO,simIO,myfit1,myfit2]=get_iocurve(simMEP,ref); 
+    [IO,simIO,myfit1,myfit2,gof]=get_iocurve(simMEP,ref); 
     x=linspace(IO(1,1),IO(end,1),100);
     plot(x,myfit1(x),'k','linewidth',1); hold on;
     x=linspace(simIO(1,1),simIO(end,1),100);
@@ -44,7 +44,9 @@ function plot_summary_pheno(p,ref)
     xlim([27 58]);box off;
     xlabel('TMS intensity (%MSO)','fontsize',10,'FontName', 'calibri');
     ylabel('Amplitude (mV)','fontsize',8,'FontName', 'calibri');
-    title('IO curve');
+    %title('IO curve');
+    %R2=1-sumsqr(IO(:,2)-simIO(:,2))/sumsqr(IO(:,2)-mean(IO(:,2)));
+    title(sprintf('IO (R^2= %.2g)',gof))
    
     if ismember(ref.subj,[1,2,4,7,9])
         yticks=unique([get(gca,'ytick'),0.5]);
@@ -102,7 +104,7 @@ function plot_summary_pheno(p,ref)
 end
 
 %==========================================================================
-function [IO,simIO,myfit1,myfit2]=get_iocurve(simMEP,ref)
+function [IO,simIO,myfit1,myfit2,gof]=get_iocurve(simMEP,ref)
   
     % reload single-trial MEP for std of IO curve
     [~,~,~,~,~,y0all] = load_MEP(ref.subj,ref.intensity_idx,[20,50],0);
@@ -146,4 +148,5 @@ function [IO,simIO,myfit1,myfit2]=get_iocurve(simMEP,ref)
          [myfit1,gof,output] = fit(IO(:,1),IO(:,2),myfittype,'StartPoint',[1.4, 2, 60]);
          [myfit2,gof,output] = fit(simIO(:,1),simIO(:,2),myfittype,'StartPoint',[1.4, 2, 60]);
     end
+    gof=1-sumsqr(IO(:,2)-simIO(:,2))/sumsqr(IO(:,2)-mean(IO(:,2)));
 end
