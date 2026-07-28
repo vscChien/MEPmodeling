@@ -78,7 +78,7 @@ function plot_param_panel(p,ref)
     if ref.model.withRC
         h2=plot(1:100,Wexc,'b','linewidth',1.5);
         h3=plot(1:100,RWinh,'m','linewidth',1.5);       
-        lgd=legend([h1,h2,h3],{'R','Wexc','R*Winh'});
+        lgd=legend([h1,h2,h3],{'R','wMN','wRC*R'});
     else
         lgd=legend(h1,'R');
     end
