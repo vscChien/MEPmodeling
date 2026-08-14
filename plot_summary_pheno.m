@@ -67,8 +67,8 @@ function plot_summary_pheno(p,ref)
     ylimit=ylim; ylim([-ylimit(2)/10 ylimit(2)]);xlim([15 50]);
     text(25,ylimit(2)*0.9,sprintf('shape=%g',round(shape,2)),'color','k','fontsize',7,'FontName', 'calibri','BackgroundColor','none');
     text(25,ylimit(2)*0.8,sprintf('rate=%g',round(rate,2)),'color','k','fontsize',7,'FontName', 'calibri','BackgroundColor','none');
-    text(25,ylimit(2)*0.7,sprintf('dAxon=%g',round(delay,2)),'color','k','fontsize',7,'FontName', 'calibri','BackgroundColor','none');
-    text(25,ylimit(2)*0.6,sprintf('tLag=%g',round(tshift,2)),'color','k','fontsize',7,'FontName', 'calibri','BackgroundColor','none');
+    text(25,ylimit(2)*0.7,sprintf('daxon=%g',round(delay,2)),'color','k','fontsize',7,'FontName', 'calibri','BackgroundColor','none');
+    text(25,ylimit(2)*0.6,sprintf('tlag=%g',round(tshift,2)),'color','k','fontsize',7,'FontName', 'calibri','BackgroundColor','none');
     box off
 
 
